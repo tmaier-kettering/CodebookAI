@@ -1,8 +1,7 @@
 from __future__ import annotations
 import io, json
 from typing import Iterable, List, Sequence
-from pathlib import Path
-import config
+from settings import config
 
 
 def build_schema(allowed_labels: list[str]) -> dict:

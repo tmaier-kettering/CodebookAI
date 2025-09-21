@@ -1,20 +1,19 @@
 import json
-from tkinter import messagebox
+from settings import secrets_store
 import tkinter as tk
+import pandas as pd
+from tkinter import messagebox, filedialog
 from typing import Optional
-
-import config
 from file_handling import csv_handling
-OPENAI_API_KEY = config.OPENAI_API_KEY
 from openai import OpenAI
-client = OpenAI(api_key=OPENAI_API_KEY)
 from live_processing.response_calls import prompt_response
-from file_handling.csv_handling import import_csv, _ensure_parent
-from file_handling.csv_handling import save_classifications_to_csv
 from file_handling.json_handling import build_schema
 
+OPENAI_API_KEY = secrets_store.load_api_key()
+client = OpenAI(api_key=OPENAI_API_KEY)
+
+
 def send_live_call(parent: Optional[tk.Misc] = None):
-    owner, created_root = _ensure_parent(parent)
 
     messagebox.showwarning("Warning", "Software will appear to freeze will running live processing. Please be patient. It can take a long time.")
 
@@ -25,13 +24,18 @@ def send_live_call(parent: Optional[tk.Misc] = None):
 
     responses = []
     for quote in quotes:
-        response = prompt_response(client, labels, quote, schema)
-        responses.append(response)
+        response = json.loads(prompt_response(client, labels, quote, schema).output_text)
+        responses.append(response["classifications"][0])
+        # TODO: Add progress bar or status update
 
-    output = []
-    for response in responses:
-        data = json.loads(response.output_text)
-        output.append(data)
+    output = pd.DataFrame(responses)
 
-    save_classifications_to_csv(output)
+    file_path = filedialog.asksaveasfilename(
+        title="Save classifications as CSV",
+        defaultextension=".csv",
+        filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+        initialfile="classifications.csv",
+    )
+
+    output.to_csv(file_path, index=False)
 

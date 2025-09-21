@@ -9,7 +9,7 @@ from batch_processing.batch_method import list_batches
 
 APP_TITLE = "CodebookAI"
 WINDOW_SIZE = (1000, 620)  # width, height
-TABLE_HEIGHT_ROWS = 8
+TABLE_HEIGHT_ROWS = 12
 
 
 def center_window(win: tk.Tk, width: int, height: int) -> None:
@@ -51,7 +51,7 @@ def call_batch_async(parent: tk.Tk) -> None:
 
 
 def call_batch_download_async(parent: tk.Tk, batch_id: str) -> None:
-    """Run get_batch_results() on a background thread, report errors to the UI."""
+    """Download batch results on a background thread, report errors to the UI."""
     def _worker():
         try:
             batch_method.get_batch_results(batch_id)
@@ -167,9 +167,8 @@ def build_ui(root: tk.Tk) -> None:
         pass
 
     tools_menu.add_command(label="Live Process", command=_on_live_process)
-    tools_menu.add_command(label="Sample", command=_on_sample)
-    tools_menu.add_separator()
-    tools_menu.add_command(label="Calculate Interrater Reliability", command=_on_calc_irr)
+    # tools_menu.add_command(label="Sample", command=_on_sample)
+    # tools_menu.add_command(label="Calculate Interrater Reliability", command=_on_calc_irr)
 
     tools_btn = ttk.Button(header, text="🛠", width=3,
                            command=lambda: _popup_menu_below_widget(tools_btn, tools_menu))

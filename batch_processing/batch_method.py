@@ -1,12 +1,17 @@
-import config
+import json
+from tkinter import filedialog
+import pandas as pd
+from settings import config, secrets_store
 from file_handling import csv_handling
 from openai import OpenAI
 from file_handling.json_handling import generate_batch_jsonl_bytes
-from file_handling.csv_handling import import_csv, save_classifications_csv_from_content_bytes
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+
 
 
 def get_client():
-    return OpenAI(api_key=config.OPENAI_API_KEY)
+    return OpenAI(api_key=secrets_store.load_api_key())
 
 
 def send_batch(root):
@@ -45,7 +50,27 @@ def get_batch_results(batch_id):
     client = get_client()
     status = get_batch_status(batch_id)
     file_response = client.files.content(status.output_file_id).content
-    save_classifications_csv_from_content_bytes(file_response)
+    results = [
+        json.loads(line)
+        for line in file_response.decode("utf-8").splitlines()
+        if line.strip()
+    ]
+
+    responses = []
+    for res in results:
+        response = json.loads(res['response']['body']['output'][1]['content'][0]['text'])
+        responses.append(response["classifications"][0])
+
+    output = pd.DataFrame(responses)
+
+    file_path = filedialog.asksaveasfilename(
+        title="Save classifications as CSV",
+        defaultextension=".csv",
+        filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+        initialfile="classifications.csv",
+    )
+
+    output.to_csv(file_path, index=False)
 
 
 def cancel_batch(batch_id):
@@ -62,10 +87,10 @@ def list_batches():
     done_batches = []
     for batch in batches:
         if batch.status == "validating" or batch.status == "in_progress" or batch.status == "cancelling" or batch.status == "finalizing":
-            tuple_of_batch_data = (batch.id, batch.status, batch.created_at)
+            tuple_of_batch_data = (batch.id, batch.status, datetime.fromtimestamp(batch.created_at, ZoneInfo(config.time_zone)))
             ongoing_batches.append(tuple_of_batch_data)
         else:
-            tuple_of_batch_data = (batch.id, batch.status, batch.created_at)
+            tuple_of_batch_data = (batch.id, batch.status, datetime.fromtimestamp(batch.created_at, ZoneInfo(config.time_zone)))
             done_batches.append(tuple_of_batch_data)
 
     return ongoing_batches, done_batches
