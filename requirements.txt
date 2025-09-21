@@ -1,0 +1,12 @@
+# Core dependencies for text classification application
+openai>=1.0.0,<2.0.0          # OpenAI API client
+python-dotenv>=1.0.0          # Environment variable management
+
+# Optional GUI dependencies (comment out for headless deployment)
+# tkinter is usually bundled with Python, but may need separate install on some systems
+
+# Development dependencies (optional)
+# pytest>=7.0.0                # Testing framework
+# black>=23.0.0                # Code formatting
+# flake8>=6.0.0                # Linting
+# mypy>=1.0.0                  # Type checking
