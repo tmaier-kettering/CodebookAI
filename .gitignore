@@ -205,3 +205,12 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+
+# Codebook specific
+*.csv
+*.jsonl
+*.log
+
+# Temporary files
+/tmp/
