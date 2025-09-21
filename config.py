@@ -1,1 +1,3 @@
-OPENAI_API_KEY="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"
+OPENAI_API_KEY = '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'
+model = 'o3'
+max_batches = 3

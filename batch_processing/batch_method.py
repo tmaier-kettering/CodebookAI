@@ -1,13 +1,20 @@
 import config
-OPENAI_API_KEY = config.OPENAI_API_KEY
+from file_handling import csv_handling
 from openai import OpenAI
-client = OpenAI(api_key=OPENAI_API_KEY)
 from file_handling.json_handling import generate_batch_jsonl_bytes
 from file_handling.csv_handling import import_csv, save_classifications_csv_from_content_bytes
 
 
-# Create your batch input file
-def send_batch(labels, quotes):
+def get_client():
+    return OpenAI(api_key=config.OPENAI_API_KEY)
+
+
+def send_batch(root):
+    client = get_client()
+
+    labels = csv_handling.import_csv(root, "Select the labels CSV")
+    quotes = csv_handling.import_csv(root, "Select the quotes CSV")
+
     batch_bytes = generate_batch_jsonl_bytes(labels, quotes)
 
     batch_input_file = client.files.create(
@@ -29,20 +36,36 @@ def send_batch(labels, quotes):
     return batch
 
 
-def get_batch_status(batch):
-    return client.batches.retrieve(batch.id)
+def get_batch_status(batch_id):
+    client = get_client()
+    return client.batches.retrieve(batch_id)
 
 
-def get_batch_results(batch):
-    status = get_batch_status(batch)
+def get_batch_results(batch_id):
+    client = get_client()
+    status = get_batch_status(batch_id)
     file_response = client.files.content(status.output_file_id).content
     save_classifications_csv_from_content_bytes(file_response)
 
 
 def cancel_batch(batch_id):
+    client = get_client()
     return client.batches.cancel(batch_id)
 
 
-def list_batches(limit=20):
-    return client.batches.list(limit=limit)
+def list_batches():
+    limit = config.max_batches
+    client = get_client()
 
+    batches = client.batches.list(limit=limit)
+    ongoing_batches = []
+    done_batches = []
+    for batch in batches:
+        if batch.status == "validating" or batch.status == "in_progress" or batch.status == "cancelling" or batch.status == "finalizing":
+            tuple_of_batch_data = (batch.id, batch.status, batch.created_at)
+            ongoing_batches.append(tuple_of_batch_data)
+        else:
+            tuple_of_batch_data = (batch.id, batch.status, batch.created_at)
+            done_batches.append(tuple_of_batch_data)
+
+    return ongoing_batches, done_batches
