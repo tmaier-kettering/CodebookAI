@@ -3,10 +3,15 @@ from __future__ import annotations
 import importlib
 import io
 import os
+import sys
 from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, messagebox
 
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from ui.apple_theme import AppleTheme
 import config  # existing config.py in the same module path
 
 
@@ -22,6 +27,10 @@ class SettingsWindow(tk.Toplevel):
         self.title("Settings")
         self.transient(parent)   # keep on top of parent
         self.resizable(False, False)
+        
+        # Apply Apple theme to this window
+        style = AppleTheme.apply_theme(self)
+        self.configure(bg=AppleTheme.COLORS['grouped_background'])
 
         # --- State variables ---
         self.var_api_key = tk.StringVar(value=getattr(config, "OPENAI_API_KEY", ""))
@@ -29,30 +38,43 @@ class SettingsWindow(tk.Toplevel):
         self.var_max_batches = tk.StringVar(value=str(getattr(config, "max_batches", 20)))
         self.var_show_key = tk.BooleanVar(value=False)
 
-        # --- Layout ---
-        pad = {"padx": 12, "pady": 8}
-        frm = ttk.Frame(self, padding=16)
-        frm.grid(row=0, column=0, sticky="nsew")
+        # --- Main container with card styling ---
+        main_container = ttk.Frame(self, style='Card.TFrame', padding=AppleTheme.SPACING['xl'])
+        main_container.grid(row=0, column=0, sticky="nsew", padx=AppleTheme.SPACING['md'], pady=AppleTheme.SPACING['md'])
+        
+        # Title
+        title_lbl = ttk.Label(main_container, text="Settings", style="Headline.TLabel")
+        title_lbl.grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, AppleTheme.SPACING['lg']))
 
-        # API Key
-        ttk.Label(frm, text="OpenAI API Key:").grid(row=0, column=0, sticky="w", **pad)
-        self.ent_api = ttk.Entry(frm, textvariable=self.var_api_key, width=48, show="•")
-        self.ent_api.grid(row=0, column=1, sticky="w", **pad)
+        # Form grid with better spacing
+        form_frame = ttk.Frame(main_container)
+        form_frame.grid(row=1, column=0, columnspan=3, sticky="ew", pady=(0, AppleTheme.SPACING['lg']))
+        form_frame.columnconfigure(1, weight=1)
 
-        chk = ttk.Checkbutton(
-            frm,
-            text="Show",
-            variable=self.var_show_key,
-            command=self._toggle_api_visibility
-        )
-        chk.grid(row=0, column=2, sticky="w", **pad)
+        # API Key section
+        api_label = ttk.Label(form_frame, text="OpenAI API Key", style="Body.TLabel")
+        api_label.grid(row=0, column=0, sticky="w", pady=(0, AppleTheme.SPACING['xs']))
+        
+        api_container = ttk.Frame(form_frame)
+        api_container.grid(row=1, column=0, columnspan=3, sticky="ew", pady=(0, AppleTheme.SPACING['lg']))
+        api_container.columnconfigure(0, weight=1)
+        
+        self.ent_api = ttk.Entry(api_container, textvariable=self.var_api_key, width=50, show="•",
+                                font=AppleTheme.get_font('body'))
+        self.ent_api.grid(row=0, column=0, sticky="ew", padx=(0, AppleTheme.SPACING['sm']))
 
-        # Model
-        ttk.Label(frm, text="Model:").grid(row=1, column=0, sticky="w", **pad)
+        show_key_btn = ttk.Checkbutton(api_container, text="Show", variable=self.var_show_key,
+                                      command=self._toggle_api_visibility)
+        show_key_btn.grid(row=0, column=1, sticky="w")
+
+        # Model section
+        model_label = ttk.Label(form_frame, text="Model", style="Body.TLabel")
+        model_label.grid(row=2, column=0, sticky="w", pady=(0, AppleTheme.SPACING['xs']))
+        
         self.cmb_model = ttk.Combobox(
-            frm,
+            form_frame,
             textvariable=self.var_model,
-            width=45,
+            width=47,
             values=[
                 "gpt-4o",
                 "o3",
@@ -61,22 +83,35 @@ class SettingsWindow(tk.Toplevel):
                 "gpt-5-mini",
                 "omni-moderate",  # add/trim as needed
             ],
-            state="readonly"
+            state="readonly",
+            font=AppleTheme.get_font('body')
         )
-        self.cmb_model.grid(row=1, column=1, columnspan=2, sticky="w", **pad)
+        self.cmb_model.grid(row=3, column=0, columnspan=3, sticky="ew", pady=(0, AppleTheme.SPACING['lg']))
 
-        # max_batches
-        ttk.Label(frm, text="Max Batches:").grid(row=2, column=0, sticky="w", **pad)
-        self.ent_max = ttk.Spinbox(frm, from_=1, to=1000, textvariable=self.var_max_batches, width=10)
-        self.ent_max.grid(row=2, column=1, sticky="w", **pad)
+        # Max batches section
+        max_batch_label = ttk.Label(form_frame, text="Max Batches", style="Body.TLabel")
+        max_batch_label.grid(row=4, column=0, sticky="w", pady=(0, AppleTheme.SPACING['xs']))
+        
+        self.ent_max = ttk.Spinbox(form_frame, from_=1, to=1000, textvariable=self.var_max_batches, 
+                                  width=15, font=AppleTheme.get_font('body'))
+        self.ent_max.grid(row=5, column=0, sticky="w", pady=(0, AppleTheme.SPACING['lg']))
 
-        # Buttons
-        btns = ttk.Frame(frm)
-        btns.grid(row=3, column=0, columnspan=3, sticky="e", pady=(12, 0))
+        # Button container with proper spacing
+        btn_container = ttk.Frame(main_container)
+        btn_container.grid(row=2, column=0, columnspan=3, sticky="e")
 
-        ttk.Button(btns, text="Reset to File", command=self._reset_from_file).grid(row=0, column=0, padx=6)
-        ttk.Button(btns, text="Cancel", command=self.destroy).grid(row=0, column=1, padx=6)
-        ttk.Button(btns, text="Save", style="Accent.TButton", command=self._save).grid(row=0, column=2, padx=6)
+        # Use modern button styles
+        reset_btn = ttk.Button(btn_container, text="Reset", style="Secondary.TButton",
+                              command=self._reset_from_file)
+        reset_btn.grid(row=0, column=0, padx=(0, AppleTheme.SPACING['sm']))
+        
+        cancel_btn = ttk.Button(btn_container, text="Cancel", style="Secondary.TButton",
+                               command=self.destroy)
+        cancel_btn.grid(row=0, column=1, padx=(0, AppleTheme.SPACING['sm']))
+        
+        save_btn = ttk.Button(btn_container, text="Save", style="Accent.TButton",
+                             command=self._save)
+        save_btn.grid(row=0, column=2)
 
         # Make Enter=Save, Esc=Cancel
         self.bind("<Return>", lambda e: self._save())

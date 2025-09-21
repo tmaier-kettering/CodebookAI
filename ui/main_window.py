@@ -1,15 +1,21 @@
 import threading
 import tkinter as tk
 from tkinter import ttk, messagebox
-from settings_window import SettingsWindow
+import sys
+import os
 
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from ui.settings_window import SettingsWindow
+from ui.apple_theme import AppleTheme
 import live_processing.live_method
 from batch_processing import batch_method
 from batch_processing.batch_method import list_batches
 
 APP_TITLE = "CodebookAI"
-WINDOW_SIZE = (1000, 620)  # width, height
-TABLE_HEIGHT_ROWS = 8
+WINDOW_SIZE = (1200, 800)  # width, height - increased for modern feel
+TABLE_HEIGHT_ROWS = 10
 
 
 def center_window(win: tk.Tk, width: int, height: int) -> None:
@@ -91,20 +97,32 @@ def cancel_batch_async(parent: tk.Tk, batch_id: str) -> None:
 
 def _make_tab_with_tree(parent_frame: ttk.Frame) -> tuple[ttk.Frame, ttk.Treeview]:
     """Helper to create a Treeview + horizontal scrollbar in a tab frame."""
-    tab_inner = ttk.Frame(parent_frame)
+    tab_inner = ttk.Frame(parent_frame, padding=AppleTheme.SPACING['md'])
     tab_inner.columnconfigure(0, weight=1)
+    tab_inner.rowconfigure(0, weight=1)
 
     columns = ("id", "status", "created_at")
     tree = ttk.Treeview(tab_inner, columns=columns, show="headings", height=TABLE_HEIGHT_ROWS)
-    for c in columns:
-        tree.heading(c, text=c)
-        tree.column(c, width=250 if c == "id" else 160, anchor="w")
+    
+    # Configure columns with better headers and sizing
+    tree.heading("id", text="Batch ID")
+    tree.heading("status", text="Status")
+    tree.heading("created_at", text="Created")
+    
+    tree.column("id", width=300, anchor="w")
+    tree.column("status", width=120, anchor="center")
+    tree.column("created_at", width=180, anchor="w")
 
+    # Add scrollbars
+    v_scroll = ttk.Scrollbar(tab_inner, orient="vertical", command=tree.yview)
     h_scroll = ttk.Scrollbar(tab_inner, orient="horizontal", command=tree.xview)
-    tree.configure(xscrollcommand=h_scroll.set)
+    tree.configure(yscrollcommand=v_scroll.set, xscrollcommand=h_scroll.set)
 
-    tree.grid(row=0, column=0, sticky="ew")
+    # Grid layout
+    tree.grid(row=0, column=0, sticky="nsew")
+    v_scroll.grid(row=0, column=1, sticky="ns")
     h_scroll.grid(row=1, column=0, sticky="ew")
+    
     return tab_inner, tree
 
 
@@ -134,23 +152,38 @@ def _popup_menu_below_widget(widget: tk.Widget, menu: tk.Menu) -> None:
 def build_ui(root: tk.Tk) -> None:
     root.title(APP_TITLE)
     center_window(root, *WINDOW_SIZE)
+    
+    # Apply Apple-inspired theme
+    style = AppleTheme.apply_theme(root)
+    
+    # Configure root background
+    root.configure(bg=AppleTheme.COLORS['grouped_background'])
 
-    # Grid: header, spacer, tabs+controls
+    # Grid: header, main content area
     root.columnconfigure(0, weight=1)
-    root.rowconfigure(0, weight=0)
-    root.rowconfigure(1, weight=1)
-    root.rowconfigure(2, weight=0)
+    root.rowconfigure(0, weight=0)  # header
+    root.rowconfigure(1, weight=1)  # main content
 
-    # Header
-    header = ttk.Frame(root, padding=(16, 12))
+    # Header with card-like appearance
+    header_container = ttk.Frame(root, style='Card.TFrame', padding=(AppleTheme.SPACING['lg'], AppleTheme.SPACING['md']))
+    header_container.grid(row=0, column=0, sticky="ew", padx=AppleTheme.SPACING['md'], pady=(AppleTheme.SPACING['md'], 0))
+    
+    header = ttk.Frame(header_container)
     header.grid(row=0, column=0, sticky="ew")
-    # Now with three columns: tools button (left), title (center grows), settings (right)
+    header_container.columnconfigure(0, weight=1)
+    
+    # Header with three columns: tools button (left), title (center grows), settings (right)
     header.columnconfigure(0, weight=0)
     header.columnconfigure(1, weight=1)
     header.columnconfigure(2, weight=0)
 
-    # --- Tools button + dropdown menu (🛠) ---
-    tools_menu = tk.Menu(root, tearoff=False)
+    # --- Tools button + dropdown menu ---
+    tools_menu = tk.Menu(root, tearoff=False,
+                        bg=AppleTheme.COLORS['primary_background'],
+                        fg=AppleTheme.COLORS['label'],
+                        activebackground=AppleTheme.COLORS['accent'],
+                        activeforeground='white',
+                        font=AppleTheme.get_font('body'))
 
     def _on_live_process():
         live_processing.live_method.send_live_call(root)
@@ -171,66 +204,86 @@ def build_ui(root: tk.Tk) -> None:
     tools_menu.add_separator()
     tools_menu.add_command(label="Calculate Interrater Reliability", command=_on_calc_irr)
 
-    tools_btn = ttk.Button(header, text="🛠", width=3,
+    tools_btn = ttk.Button(header, text="🛠️", style="Icon.TButton",
                            command=lambda: _popup_menu_below_widget(tools_btn, tools_menu))
     tools_btn.grid(row=0, column=0, sticky="w")
 
-    # Title (center)
-    title_lbl = ttk.Label(header, text=APP_TITLE, font=("Segoe UI", 18, "bold"))
-    title_lbl.grid(row=0, column=1, sticky="n", pady=(2, 0))
+    # Title (center) with modern typography
+    title_lbl = ttk.Label(header, text=APP_TITLE, style="Title.TLabel")
+    title_lbl.grid(row=0, column=1, sticky="")
 
-    # Settings (right)
-    settings_btn = ttk.Button(header, text="⚙", width=3, command=lambda: SettingsWindow(root))
-    settings_btn.grid(row=0, column=2, sticky="ne")
+    # Settings (right) with SF Symbols-inspired icon
+    settings_btn = ttk.Button(header, text="⚙️", style="Icon.TButton", 
+                             command=lambda: SettingsWindow(root))
+    settings_btn.grid(row=0, column=2, sticky="e")
 
-    # Table area
-    table_area = ttk.Frame(root, padding=(16, 12))
-    table_area.grid(row=2, column=0, sticky="ew")
-    table_area.columnconfigure(0, weight=1)
+    # Main content area with card-like container
+    main_container = ttk.Frame(root, style='Card.TFrame', padding=AppleTheme.SPACING['lg'])
+    main_container.grid(row=1, column=0, sticky="nsew", padx=AppleTheme.SPACING['md'], pady=AppleTheme.SPACING['md'])
+    main_container.columnconfigure(0, weight=1)
+    main_container.rowconfigure(1, weight=1)  # Make notebook area expandable
 
-    # Controls row
-    controls = ttk.Frame(table_area)
-    controls.grid(row=0, column=0, sticky="ew")
-    controls.columnconfigure(0, weight=1)
-    controls.columnconfigure(1, weight=1)
-    controls.columnconfigure(2, weight=1)
+    # Controls row with better spacing and modern buttons
+    controls_container = ttk.Frame(main_container)
+    controls_container.grid(row=0, column=0, sticky="ew", pady=(0, AppleTheme.SPACING['md']))
+    controls_container.columnconfigure(1, weight=1)  # Center space expands
 
-    add_btn = ttk.Button(controls, text="＋", width=3, command=lambda: call_batch_async(root))
-    add_btn.grid(row=0, column=0, sticky="w", padx=(0, 8))
+    # Left-aligned buttons
+    left_controls = ttk.Frame(controls_container)
+    left_controls.grid(row=0, column=0, sticky="w")
+    
+    add_btn = ttk.Button(left_controls, text="＋ New Batch", style="Accent.TButton",
+                        command=lambda: call_batch_async(root))
+    add_btn.grid(row=0, column=0, padx=(0, AppleTheme.SPACING['sm']))
 
-    refresh_btn = ttk.Button(controls, text="↻", width=3, command=lambda: refresh_batches_async(root))
-    refresh_btn.grid(row=0, column=2, sticky="e", padx=(8, 0))
+    # Right-aligned buttons
+    right_controls = ttk.Frame(controls_container)
+    right_controls.grid(row=0, column=2, sticky="e")
+    
+    refresh_btn = ttk.Button(right_controls, text="↻ Refresh", style="Secondary.TButton",
+                           command=lambda: refresh_batches_async(root))
+    refresh_btn.grid(row=0, column=0)
 
-    # Notebook with two tabs
-    notebook = ttk.Notebook(table_area)
-    notebook.grid(row=1, column=0, sticky="ew")
+    # Notebook with modern tab styling
+    notebook = ttk.Notebook(main_container)
+    notebook.grid(row=1, column=0, sticky="nsew")
 
     ongoing_tab, tree_ongoing = _make_tab_with_tree(notebook)
     done_tab, tree_done = _make_tab_with_tree(notebook)
 
-    notebook.add(ongoing_tab, text="Ongoing")
-    notebook.add(done_tab, text="Done")
+    notebook.add(ongoing_tab, text="  Ongoing  ")  # Add padding to tab text
+    notebook.add(done_tab, text="  Completed  ")
 
-    # --- Context menus for rows ---
+    # --- Context menus with modern styling ---
     # Ongoing tab: "Cancel"
-    ongoing_menu = tk.Menu(root, tearoff=False)
+    ongoing_menu = tk.Menu(root, tearoff=False,
+                          bg=AppleTheme.COLORS['primary_background'],
+                          fg=AppleTheme.COLORS['label'],
+                          activebackground=AppleTheme.COLORS['destructive'],
+                          activeforeground='white',
+                          font=AppleTheme.get_font('body'))
     def _on_cancel():
         sel = tree_ongoing.selection()
         if sel:
             values = tree_ongoing.item(sel[0], "values")
             cancel_batch_async(root, values[0])  # values[0] is the batch ID
         pass
-    ongoing_menu.add_command(label="Cancel", command=_on_cancel)
+    ongoing_menu.add_command(label="Cancel Batch", command=_on_cancel)
 
     # Done tab: "Download"
-    done_menu = tk.Menu(root, tearoff=False)
+    done_menu = tk.Menu(root, tearoff=False,
+                       bg=AppleTheme.COLORS['primary_background'],
+                       fg=AppleTheme.COLORS['label'],
+                       activebackground=AppleTheme.COLORS['accent'],
+                       activeforeground='white',
+                       font=AppleTheme.get_font('body'))
     def _on_download():
         sel = tree_done.selection()
         if sel:
             values = tree_done.item(sel[0], "values")
             call_batch_download_async(root, values[0])  # values[0] is the batch ID
         pass
-    done_menu.add_command(label="Download", command=_on_download)
+    done_menu.add_command(label="Download Results", command=_on_download)
 
     # Bind right-clicks
     tree_ongoing.bind("<Button-3>", lambda e: _popup_menu(e, tree_ongoing, ongoing_menu))
