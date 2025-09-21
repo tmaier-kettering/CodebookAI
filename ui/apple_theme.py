@@ -145,71 +145,93 @@ class AppleTheme:
                        foreground=cls.COLORS['secondary_label'],
                        font=(cls.FONTS['system'], cls.FONTS['body_size']))
         
-        # Button styles
+        # Button styles with improved padding and modern appearance
         style.configure('Accent.TButton',
                        background=cls.COLORS['accent'],
                        foreground='white',
                        borderwidth=0,
                        focuscolor='none',
-                       font=(cls.FONTS['system'], cls.FONTS['body_size'], 'bold'))
+                       font=(cls.FONTS['system'], cls.FONTS['body_size'], 'bold'),
+                       padding=(16, 8))  # Better padding
         
         style.map('Accent.TButton',
                  background=[('active', cls._darken_color(cls.COLORS['accent'])),
-                           ('pressed', cls._darken_color(cls.COLORS['accent'], 0.2))])
+                           ('pressed', cls._darken_color(cls.COLORS['accent'], 0.2))],
+                 relief=[('pressed', 'flat'), ('!pressed', 'flat')])
         
         style.configure('Secondary.TButton',
                        background=cls.COLORS['quaternary_system_fill'],
                        foreground=cls.COLORS['label'],
                        borderwidth=0,
                        focuscolor='none',
-                       font=(cls.FONTS['system'], cls.FONTS['body_size']))
+                       font=(cls.FONTS['system'], cls.FONTS['body_size']),
+                       padding=(16, 8))  # Better padding
         
         style.map('Secondary.TButton',
                  background=[('active', cls.COLORS['tertiary_system_fill']),
-                           ('pressed', cls.COLORS['secondary_system_fill'])])
+                           ('pressed', cls.COLORS['secondary_system_fill'])],
+                 relief=[('pressed', 'flat'), ('!pressed', 'flat')])
         
         style.configure('Destructive.TButton',
                        background=cls.COLORS['destructive'],
                        foreground='white',
                        borderwidth=0,
                        focuscolor='none',
-                       font=(cls.FONTS['system'], cls.FONTS['body_size'], 'bold'))
+                       font=(cls.FONTS['system'], cls.FONTS['body_size'], 'bold'),
+                       padding=(16, 8))  # Better padding
         
         style.map('Destructive.TButton',
                  background=[('active', cls._darken_color(cls.COLORS['destructive'])),
-                           ('pressed', cls._darken_color(cls.COLORS['destructive'], 0.2))])
+                           ('pressed', cls._darken_color(cls.COLORS['destructive'], 0.2))],
+                 relief=[('pressed', 'flat'), ('!pressed', 'flat')])
         
-        # Icon button style (for toolbar buttons)
+        # Icon button style (for toolbar buttons) - more Apple-like
         style.configure('Icon.TButton',
                        background=cls.COLORS['primary_background'],
                        foreground=cls.COLORS['accent'],
-                       borderwidth=0,
+                       borderwidth=1,
+                       bordercolor=cls.COLORS['separator'],
                        focuscolor='none',
-                       font=(cls.FONTS['system'], 16),
-                       width=3,
-                       padding=(8, 8))
+                       font=(cls.FONTS['system'], 18),  # Larger icons
+                       width=4,
+                       padding=(12, 8))  # Better padding
         
         style.map('Icon.TButton',
                  background=[('active', cls.COLORS['quaternary_system_fill']),
-                           ('pressed', cls.COLORS['tertiary_system_fill'])])
+                           ('pressed', cls.COLORS['tertiary_system_fill'])],
+                 bordercolor=[('active', cls.COLORS['accent']),
+                            ('pressed', cls.COLORS['accent'])],
+                 relief=[('pressed', 'flat'), ('!pressed', 'flat')])
         
-        # Entry styles
+        # Entry styles with rounded appearance
         style.configure('TEntry',
                        fieldbackground=cls.COLORS['primary_background'],
                        borderwidth=1,
                        relief='solid',
                        bordercolor=cls.COLORS['separator'],
                        focuscolor=cls.COLORS['accent'],
-                       font=(cls.FONTS['system'], cls.FONTS['body_size']))
+                       font=(cls.FONTS['system'], cls.FONTS['body_size']),
+                       padding=(12, 8))  # Better internal padding
         
-        # Combobox styles
+        style.map('TEntry',
+                 bordercolor=[('focus', cls.COLORS['accent'])],
+                 lightcolor=[('focus', cls.COLORS['accent'])],
+                 darkcolor=[('focus', cls.COLORS['accent'])])
+        
+        # Combobox styles with Apple-like appearance
         style.configure('TCombobox',
                        fieldbackground=cls.COLORS['primary_background'],
                        borderwidth=1,
                        relief='solid',
                        bordercolor=cls.COLORS['separator'],
                        focuscolor=cls.COLORS['accent'],
-                       font=(cls.FONTS['system'], cls.FONTS['body_size']))
+                       font=(cls.FONTS['system'], cls.FONTS['body_size']),
+                       padding=(12, 8),  # Better internal padding
+                       arrowcolor=cls.COLORS['secondary_label'])
+        
+        style.map('TCombobox',
+                 bordercolor=[('focus', cls.COLORS['accent'])],
+                 arrowcolor=[('active', cls.COLORS['accent'])])
         
         # Notebook (tabs) styles
         style.configure('TNotebook',
@@ -230,21 +252,34 @@ class AppleTheme:
                            ('active', cls.COLORS['tertiary_system_fill'])],
                  foreground=[('selected', cls.COLORS['label'])])
         
-        # Treeview styles  
+        # Treeview styles with alternating row colors (Apple-like)
         style.configure('Treeview',
-                       background=cls.COLORS['primary_background'],
-                       foreground=cls.COLORS['label'],
-                       fieldbackground=cls.COLORS['primary_background'],
+                       background=AppleTheme.COLORS['primary_background'],
+                       foreground=AppleTheme.COLORS['label'],
+                       fieldbackground=AppleTheme.COLORS['primary_background'],
                        borderwidth=1,
                        relief='solid',
-                       bordercolor=cls.COLORS['separator'],
-                       font=(cls.FONTS['system'], cls.FONTS['body_size']))
+                       bordercolor=AppleTheme.COLORS['separator'],
+                       font=(AppleTheme.FONTS['system'], AppleTheme.FONTS['body_size']),
+                       rowheight=32)  # Increase row height for better spacing
+        
+        style.map('Treeview',
+                 background=[('selected', AppleTheme.COLORS['accent']),
+                           ('focus', AppleTheme.COLORS['accent'])],
+                 foreground=[('selected', 'white'),
+                           ('focus', 'white')])
+        
+        # Configure alternating row colors
+        style.configure('Treeview',
+                       background=AppleTheme.COLORS['primary_background'])
         
         style.configure('Treeview.Heading',
-                       background=cls.COLORS['secondary_background'],
-                       foreground=cls.COLORS['secondary_label'],
+                       background=AppleTheme.COLORS['secondary_background'],
+                       foreground=AppleTheme.COLORS['secondary_label'],
                        borderwidth=0,
-                       font=(cls.FONTS['system'], cls.FONTS['footnote_size'], 'bold'))
+                       relief='flat',
+                       font=(AppleTheme.FONTS['system'], AppleTheme.FONTS['footnote_size'], 'bold'),
+                       padding=(12, 8))  # Add padding to headers
         
         # Scrollbar styles
         style.configure('TScrollbar',
