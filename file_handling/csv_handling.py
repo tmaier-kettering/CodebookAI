@@ -3,11 +3,13 @@ CSV file handling with user-friendly import dialogs.
 
 This module provides utilities for importing CSV files through a graphical
 dialog interface, with options for header row handling and data validation.
-The focus is on extracting classification labels from the first column of CSV files.
+It focuses on extracting classification labels from the first column of CSV files
+and returns both the labels and the filename stem for downstream use.
 """
 
 from __future__ import annotations
 import csv
+from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from typing import List, Optional, Sequence, Tuple
@@ -57,13 +59,14 @@ def _safe_destroy(maybe_root: Optional[tk.Tk]) -> None:
 # Public API: CSV import (UI-driven)
 # ---------------------------------------
 
-def import_csv(parent: Optional[tk.Misc] = None,
-               title: str = "Import CSV",
-               filetypes: Sequence[Tuple[str, str]] = (("CSV files", "*.csv"), ("All files", "*.*"))
-               ) -> Optional[List[str]]:
+def import_csv(
+    parent: Optional[tk.Misc] = None,
+    title: str = "Import CSV",
+    filetypes: Sequence[Tuple[str, str]] = (("CSV files", "*.csv"), ("All files", "*.*")),
+) -> Optional[Tuple[List[str], str]]:
     """
     Show a small modal dialog to browse for a CSV and choose whether to skip the first row.
-    Returns a list of labels taken from the FIRST column, or None if cancelled.
+    Returns a tuple: (labels_from_first_column, filename_stem), or None if cancelled.
 
     IMPORTANT:
       - No additional `Tk()` root or `mainloop()` is created.
@@ -76,7 +79,7 @@ def import_csv(parent: Optional[tk.Misc] = None,
         filetypes: Tuple of (description, pattern) for file dialog filtering.
 
     Returns:
-        list[str] | None
+        (list[str], str) | None
     """
     owner, created_root = _ensure_parent(parent)
 
@@ -100,14 +103,17 @@ def import_csv(parent: Optional[tk.Misc] = None,
 
     tk.Button(dlg, text="Browse…", command=browse_file).grid(row=0, column=2, padx=8, pady=(10, 4))
 
-    has_headers = tk.BooleanVar(master=dlg, value=False)  # bind var to this dialog!
+    # Bind BooleanVar to this dialog so state is preserved correctly
+    has_headers = tk.BooleanVar(master=dlg, value=False)
     tk.Checkbutton(dlg, text="CSV has headers (skip first row)", variable=has_headers)\
         .grid(row=1, column=1, padx=4, pady=4, sticky="w")
 
     # Store result in closure
-    result: dict[str, Optional[List[str]]] = {"labels": None}
+    result_labels: Optional[List[str]] = None
+    result_stem: Optional[str] = None
 
     def process_and_close():
+        nonlocal result_labels, result_stem
         path = file_entry.get().strip()
         if not path:
             messagebox.showerror("Error", "No file selected.", parent=dlg)
@@ -137,7 +143,11 @@ def import_csv(parent: Optional[tk.Misc] = None,
                 return
 
         labels = [r[0] for r in rows_to_use if r]
-        result["labels"] = labels
+        # Derive filename stem (e.g., 'emotions' from 'C:/path/emotions.csv')
+        name_stem = Path(path).stem
+
+        result_labels = labels
+        result_stem = name_stem
         dlg.destroy()
 
     # Buttons
@@ -165,6 +175,7 @@ def import_csv(parent: Optional[tk.Misc] = None,
     # Clean up temp root if we created one
     _safe_destroy(created_root)
 
-    return result["labels"]
-
-
+    # Return None if cancelled, otherwise the tuple
+    if result_labels is None or result_stem is None:
+        return None
+    return result_labels, result_stem

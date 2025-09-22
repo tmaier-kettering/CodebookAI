@@ -32,7 +32,7 @@ def keyword_extraction_pipeline(parent: Optional[tk.Misc] = None):
     show progress, then save results to CSV.
     """
     # Get quotes CSV
-    quotes = import_csv(parent, "Select the quotes CSV")
+    quotes, quotes_filename = import_csv(parent, "Select the quotes CSV")
     if quotes is None:
         return  # user hit Cancel
 

@@ -32,13 +32,13 @@ def single_label_pipeline(parent: Optional[tk.Misc] = None):
     show progress, then save results to CSV.
     """
     # Get labels CSV; if user cancels, just exit cleanly
-    label_values = import_csv(parent, "Select the labels CSV")
+    label_values, labels_filename = import_csv(parent, "Select the labels CSV")
     if label_values is None:
         return  # user hit Cancel
     labels = make_str_enum("Label", label_values)
 
     # Get quotes CSV
-    quotes = import_csv(parent, "Select the quotes CSV")
+    quotes, quotes_filename = import_csv(parent, "Select the quotes CSV")
     if quotes is None:
         return  # user hit Cancel
 

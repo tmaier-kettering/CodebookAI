@@ -8,6 +8,7 @@ The interface displays ongoing and completed batch jobs in tabbed tables.
 
 import threading
 import tkinter as tk
+from functools import partial
 from tkinter import ttk, messagebox
 
 # Handle imports based on how the script is run
@@ -40,15 +41,15 @@ TABLE_HEIGHT_ROWS = 12
 class ToolTip:
     """
     Simple tooltip widget for providing hover help text on buttons and widgets.
-    
+
     This class creates a small popup tooltip that appears when the mouse
     hovers over a widget and disappears when the mouse leaves.
     """
-    
+
     def __init__(self, widget: tk.Widget, text: str):
         """
         Initialize tooltip for a widget.
-        
+
         Args:
             widget: The tkinter widget to attach the tooltip to
             text: The text to display in the tooltip
@@ -56,31 +57,31 @@ class ToolTip:
         self.widget = widget
         self.text = text
         self.tooltip_window = None
-        
+
         # Bind hover events
         self.widget.bind("<Enter>", self._on_enter)
         self.widget.bind("<Leave>", self._on_leave)
-    
+
     def _on_enter(self, event=None):
         """Show tooltip when mouse enters widget."""
         self._show_tooltip()
-    
+
     def _on_leave(self, event=None):
         """Hide tooltip when mouse leaves widget."""
         self._hide_tooltip()
-    
+
     def _show_tooltip(self):
         """Create and display the tooltip window."""
         if self.tooltip_window:
             return
-            
+
         x = self.widget.winfo_rootx() + 25
         y = self.widget.winfo_rooty() + 20
-        
+
         self.tooltip_window = tk.Toplevel(self.widget)
         self.tooltip_window.wm_overrideredirect(True)
         self.tooltip_window.wm_geometry(f"+{x}+{y}")
-        
+
         label = tk.Label(
             self.tooltip_window,
             text=self.text,
@@ -90,7 +91,7 @@ class ToolTip:
             font=("Arial", 9)
         )
         label.pack()
-    
+
     def _hide_tooltip(self):
         """Destroy the tooltip window."""
         if self.tooltip_window:
@@ -101,7 +102,7 @@ class ToolTip:
 def center_window(win: tk.Tk, width: int, height: int) -> None:
     """
     Center a Tkinter window on the screen.
-    
+
     Args:
         win: The Tkinter window to center
         width: Desired window width in pixels
@@ -118,7 +119,7 @@ def center_window(win: tk.Tk, width: int, height: int) -> None:
 def populate_treeview(tree: ttk.Treeview, columns: tuple[str, ...], rows: list[tuple]) -> None:
     """
     Configure and populate a Treeview widget with tabular data.
-    
+
     Args:
         tree: The Treeview widget to populate
         columns: Tuple of column header names
@@ -142,10 +143,10 @@ def populate_treeview(tree: ttk.Treeview, columns: tuple[str, ...], rows: list[t
 def call_batch_async(parent: tk.Tk) -> None:
     """
     Start a new batch processing job on a background thread.
-    
+
     This function launches the batch creation process in a separate thread
     to prevent the UI from freezing during file selection and API calls.
-    
+
     Args:
         parent: Parent Tkinter window for error dialog ownership
     """
@@ -161,7 +162,7 @@ def call_batch_async(parent: tk.Tk) -> None:
 def call_batch_download_async(parent: tk.Tk, batch_id: str) -> None:
     """
     Download batch processing results on a background thread.
-    
+
     Args:
         parent: Parent Tkinter window for error dialog ownership
         batch_id: Unique identifier of the batch job to download results from
@@ -178,10 +179,10 @@ def call_batch_download_async(parent: tk.Tk, batch_id: str) -> None:
 def refresh_batches_async(parent: tk.Tk) -> None:
     """
     Refresh the batch job lists on a background thread.
-    
+
     This function fetches the latest batch job status from OpenAI and
     updates both the ongoing and completed batch tables.
-    
+
     Args:
         parent: Parent Tkinter window containing the batch tables
     """
@@ -190,22 +191,22 @@ def refresh_batches_async(parent: tk.Tk) -> None:
             ongoing_batches, done_batches = list_batches()
 
             def _update_ui():
-                cols = ("id", "status", "created_at")
+                cols = ("id", "status", "created_at", "model", "input file name", "output file name")
                 populate_treeview(parent.tree_ongoing, cols, ongoing_batches)
                 populate_treeview(parent.tree_done, cols, done_batches)
 
             parent.after(0, _update_ui)
         except Exception as error:
-            parent.after(0, lambda: messagebox.showerror("Refresh Error", str(error)))
+            parent.after(0, partial(messagebox.showerror, "Refresh Error", str(error)))
     threading.Thread(target=_worker, daemon=True).start()
 
 
 def cancel_batch_async(parent: tk.Tk, batch_id: str) -> None:
     """
     Cancel a batch processing job on a background thread.
-    
+
     Args:
-        parent: Parent Tkinter window for error dialog ownership  
+        parent: Parent Tkinter window for error dialog ownership
         batch_id: Unique identifier of the batch job to cancel
     """
     def _worker():
@@ -220,21 +221,21 @@ def cancel_batch_async(parent: tk.Tk, batch_id: str) -> None:
 def _make_tab_with_tree(parent_frame: ttk.Frame) -> tuple[ttk.Frame, ttk.Treeview]:
     """
     Create a Treeview widget with horizontal scrollbar inside a tab frame.
-    
+
     Args:
         parent_frame: The parent frame to contain the tree and scrollbar
-        
+
     Returns:
         Tuple of (tab_inner_frame, treeview_widget)
     """
     tab_inner = ttk.Frame(parent_frame)
     tab_inner.columnconfigure(0, weight=1)
 
-    columns = ("id", "status", "created_at")
+    columns = ("id", "status", "created_at", "model", "input file name", "output file name")
     tree = ttk.Treeview(tab_inner, columns=columns, show="headings", height=TABLE_HEIGHT_ROWS)
     for c in columns:
         tree.heading(c, text=c)
-        tree.column(c, width=250 if c == "id" else 160, anchor="w")
+        tree.column(c, width=tab_inner.winfo_width()//len(columns), anchor="w")
 
     h_scroll = ttk.Scrollbar(tab_inner, orient="horizontal", command=tree.xview)
     tree.configure(xscrollcommand=h_scroll.set)
@@ -247,9 +248,9 @@ def _make_tab_with_tree(parent_frame: ttk.Frame) -> tuple[ttk.Frame, ttk.Treevie
 def _popup_menu(event: tk.Event, tree: ttk.Treeview, menu: tk.Menu) -> None:
     """
     Handle right-click context menu display for tree items.
-    
+
     This function focuses the row under the cursor and displays the context menu.
-    
+
     Args:
         event: The mouse click event
         tree: The Treeview widget that was clicked
@@ -268,9 +269,9 @@ def _popup_menu(event: tk.Event, tree: ttk.Treeview, menu: tk.Menu) -> None:
 def _popup_menu_below_widget(widget: tk.Widget, menu: tk.Menu) -> None:
     """
     Display a context menu directly below a widget.
-    
+
     This is used for dropdown-style menus attached to buttons.
-    
+
     Args:
         widget: The widget to position the menu below
         menu: The menu to display
@@ -287,13 +288,13 @@ def _popup_menu_below_widget(widget: tk.Widget, menu: tk.Menu) -> None:
 def build_ui(root: tk.Tk) -> None:
     """
     Build and configure the main application user interface.
-    
+
     This function creates the complete UI layout including:
     - Header with tools button, title, and settings button
     - Tabbed interface for ongoing and completed batch jobs
     - Control buttons for creating new batches and refreshing
     - Context menus for batch management operations
-    
+
     Args:
         root: The main Tkinter window to build the UI in
     """
