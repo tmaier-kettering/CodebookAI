@@ -19,7 +19,7 @@ from tkinter import messagebox, filedialog
 from typing import Optional, List
 from file_handling import csv_handling
 from openai import OpenAI
-from live_processing.response_calls import prompt_response
+from live_processing.response_calls import prompt_response, parse_quotes
 from file_handling.json_handling import build_schema
 
 # Initialize OpenAI client with stored API key
@@ -58,32 +58,13 @@ def single_label_pipeline(parent: Optional[tk.Misc] = None):
 
     quotes = import_csv(parent, "Select the quotes CSV")
 
-    results: list[LabeledQuote] = []
-
-    # TODO: Open Progress Bar window here
-
-    # Process each quote individually
-    for q in quotes:
-        try:
-            resp = client.responses.parse(
-                model=config.model,
-                input=[{"role": "user", "content": f"Label this quote with exactly one emotion: {q}"}],
-                text_format=LabeledQuote,
-            )
-            results.append(resp.output_parsed)  # Validated LabeledQuote
-        except ValidationError as ve:
-            # Model tried to output something outside your enum (or wrong shape)
-            print(f"[VALIDATION ERROR] {q[:60]}... -> {ve}")
-        except Exception as e:
-            # Transport/SDK errors, etc.
-            print(f"[API ERROR] {q[:60]}... -> {e}")
-
-        # TODO: Update Progress Bar here
+    results = parse_quotes(LabeledQuote, quotes, "Label this quote with exactly one emotion from the allowed set.\nQuote: {q}")
 
     # Convert results to DataFrame and save as CSV
     rows = [m.model_dump() for m in results]
     df = pd.DataFrame(rows)
     save_as_csv(df)
+
 
 def multi_label_pipeline(parent: Optional[tk.Misc] = None):
     """
@@ -110,6 +91,8 @@ def multi_label_pipeline(parent: Optional[tk.Misc] = None):
         model_config = ConfigDict(use_enum_values=True)
 
     quotes = import_csv(parent, "Select the quotes CSV")
+
+    # TODO: Open Progress Bar window here
 
     # Process each quote individually
     results: list[LabeledQuoteMulti] = []

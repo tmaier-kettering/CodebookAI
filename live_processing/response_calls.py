@@ -6,7 +6,19 @@ This module provides functions for making structured API calls to OpenAI's
 text classification endpoints with JSON schema validation.
 """
 
-from typing import Any, List
+from typing import Any, List, Union, Callable
+from pydantic import ValidationError
+from settings import config, secrets_store
+from openai import OpenAI
+
+# Initialize OpenAI client with stored API key
+try:
+    OPENAI_API_KEY = secrets_store.load_api_key()
+    client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+except Exception:
+    # Handle cases where keyring is not available (testing environments)
+    OPENAI_API_KEY = None
+    client = None
 
 
 def prompt_response(client: Any, labels: List[str], quote: str, schema: dict) -> Any:
@@ -52,3 +64,31 @@ def prompt_response(client: Any, labels: List[str], quote: str, schema: dict) ->
     )
 
     return response
+
+
+# content_text can be either a template str (with {q}) or a callable that takes q -> str
+def parse_quotes(LabeledQuote, quotes, content_text: Union[str, Callable[[str], str]]):
+    results: list[LabeledQuote] = []
+
+    for q in quotes:
+        # Build the content string for this quote
+        if callable(content_text):
+            content = content_text(q)              # e.g., lambda q: f"... {q}"
+        else:
+            content = content_text.format(q=q)     # e.g., ".... {q}"
+
+        try:
+            resp = client.responses.parse(         # assumes `client` and `config.model` are in scope
+                model=config.model,
+                input=[{"role": "user", "content": content}],
+                text_format=LabeledQuote,
+            )
+            results.append(resp.output_parsed)
+        except ValidationError as ve:
+            print(f"[VALIDATION ERROR] {q[:60]}... -> {ve}")
+        except Exception as e:
+            print(f"[API ERROR] {q[:60]}... -> {e}")
+
+        # TODO: update progress bar here
+
+    return results
