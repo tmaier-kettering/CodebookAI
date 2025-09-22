@@ -52,7 +52,12 @@ def send_batch(root: Any) -> Any:
 
     # Get labels and quotes from user-selected CSV files
     labels = csv_handling.import_csv(root, "Select the labels CSV")
+    if labels is None:
+        return  # user hit Cancel
     quotes = csv_handling.import_csv(root, "Select the quotes CSV")
+    if quotes is None:
+        return  # user hit Cancel
+
 
     # Generate the JSONL batch file in memory
     batch_bytes = generate_batch_jsonl_bytes(labels, quotes)
