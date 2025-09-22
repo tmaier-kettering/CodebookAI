@@ -7,11 +7,16 @@ This is useful for smaller datasets or when immediate results are needed.
 """
 
 import json
-from settings import secrets_store
+
+from pydantic import BaseModel, ValidationError, Field, ConfigDict
+
+from file_handling.csv_handling import import_csv
+from file_handling.data_conversion import make_str_enum, save_as_csv
+from settings import secrets_store, config
 import tkinter as tk
 import pandas as pd
 from tkinter import messagebox, filedialog
-from typing import Optional
+from typing import Optional, List
 from file_handling import csv_handling
 from openai import OpenAI
 from live_processing.response_calls import prompt_response
@@ -27,69 +32,109 @@ except Exception:
     client = None
 
 
-def send_live_call(parent: Optional[tk.Misc] = None) -> None:
+def single_label_pipeline(parent: Optional[tk.Misc] = None):
     """
     Process text classification requests in real-time using OpenAI API.
-    
+
     This function prompts the user to select CSV files containing labels and
     quotes, then processes each quote individually through the OpenAI API,
     collecting results and saving them as a CSV file.
-    
+
     Args:
         parent: Optional Tkinter parent widget for dialog ownership
-        
+
     Warning:
         This function processes requests synchronously and may take considerable
-        time for large datasets. The UI will appear frozen during processing.
-        
-    Note:
-        Results are saved as a CSV file with columns for quote, label, and confidence.
-        Progress indication is currently limited (TODO: add progress bar).
+        time for large datasets. You cannot interact with the UI during processing.
     """
-    # Warn user about potential UI freezing
-    messagebox.showwarning(
-        "Warning", 
-        "Software will appear to freeze while running live processing. "
-        "Please be patient. It can take a long time."
-    )
 
-    # Get input data from user-selected CSV files
-    labels = csv_handling.import_csv(parent, "Select the labels CSV")
-    quotes = csv_handling.import_csv(parent, "Select the quotes CSV")
+    labels = make_str_enum("Label", import_csv(parent, "Select the labels CSV"))
 
-    # Validate inputs
-    if not labels or not quotes:
-        messagebox.showerror("Error", "Both labels and quotes are required.")
-        return
+    class LabeledQuote(BaseModel):
+        quote: str
+        label: labels  # STRICT: must be one of labels
+        confidence: float = Field(..., ge=0, le=1)  # Confidence score between 0 and 1
+        model_config = ConfigDict(use_enum_values=True)
 
-    # Build JSON schema for structured responses
-    schema = build_schema(labels)
+    quotes = import_csv(parent, "Select the quotes CSV")
+
+    results: list[LabeledQuote] = []
+
+    # TODO: Open Progress Bar window here
 
     # Process each quote individually
-    responses = []
-    for quote in quotes:
+    for q in quotes:
         try:
-            response = json.loads(prompt_response(client, labels, quote, schema).output_text)
-            responses.append(response["classifications"][0])
-            # TODO: Add progress bar or status update for better UX
+            resp = client.responses.parse(
+                model=config.model,
+                input=[{"role": "user", "content": f"Label this quote with exactly one emotion: {q}"}],
+                text_format=LabeledQuote,
+            )
+            results.append(resp.output_parsed)  # Validated LabeledQuote
+        except ValidationError as ve:
+            # Model tried to output something outside your enum (or wrong shape)
+            print(f"[VALIDATION ERROR] {q[:60]}... -> {ve}")
         except Exception as e:
-            messagebox.showerror("Processing Error", f"Failed to process quote: {quote}\nError: {str(e)}")
-            return
+            # Transport/SDK errors, etc.
+            print(f"[API ERROR] {q[:60]}... -> {e}")
 
-    # Convert results to DataFrame for CSV export
-    output = pd.DataFrame(responses)
+        # TODO: Update Progress Bar here
 
-    # Prompt user to save results
-    file_path = filedialog.asksaveasfilename(
-        title="Save classifications as CSV",
-        defaultextension=".csv",
-        filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
-        initialfile="classifications.csv",
-    )
+    # Convert results to DataFrame and save as CSV
+    rows = [m.model_dump() for m in results]
+    df = pd.DataFrame(rows)
+    save_as_csv(df)
 
-    if file_path:  # Only save if user didn't cancel
-        output.to_csv(file_path, index=False)
-        messagebox.showinfo("Success", f"Classifications saved to {file_path}")
-    else:
-        messagebox.showinfo("Cancelled", "Save operation cancelled.")
+def multi_label_pipeline(parent: Optional[tk.Misc] = None):
+    """
+        Process text classification requests in real-time using OpenAI API.
 
+        This function prompts the user to select CSV files containing labels and
+        quotes, then processes each quote individually through the OpenAI API,
+        collecting results and saving them as a CSV file.
+
+        Args:
+            parent: Optional Tkinter parent widget for dialog ownership
+
+        Warning:
+            This function processes requests synchronously and may take considerable
+            time for large datasets. You cannot interact with the UI during processing.
+        """
+
+    labels = make_str_enum("Label", import_csv(parent, "Select the labels CSV"))
+
+    class LabeledQuoteMulti(BaseModel):
+        quote: str
+        label: List[labels] = Field(..., min_items=1)
+        confidence: float = Field(..., ge=0, le=1)  # Confidence score between 0 and 1
+        model_config = ConfigDict(use_enum_values=True)
+
+    quotes = import_csv(parent, "Select the quotes CSV")
+
+    # Process each quote individually
+    results: list[LabeledQuoteMulti] = []
+    for q in quotes:
+        try:
+            resp = client.responses.parse(
+                model=config.model,
+                input=[{
+                    "role": "user",
+                    "content": (
+                        "Label this quote with labels from the allowed set only. "
+                        f"Allowed: {', '.join(labels)}\nQuote: {q}"
+                    ),
+                }],
+                text_format=LabeledQuoteMulti,
+            )
+            results.append(resp.output_parsed)
+        except ValidationError as ve:
+            print(f"[VALIDATION ERROR] {q[:60]}... -> {ve}")
+        except Exception as e:
+            print(f"[API ERROR] {q[:60]}... -> {e}")
+
+        # TODO: Update Progress Bar here
+
+    # Convert results to DataFrame and save as CSV
+    rows = [m.model_dump() for m in results]
+    df = pd.DataFrame(rows)
+    save_as_csv(df)

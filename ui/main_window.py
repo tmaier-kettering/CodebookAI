@@ -313,8 +313,12 @@ def build_ui(root: tk.Tk) -> None:
     # --- Tools button + dropdown menu (🛠) ---
     tools_menu = tk.Menu(root, tearoff=False)
 
-    def _on_live_process():
-        live_processing.live_method.send_live_call(root)
+    def _single_label_live_call():
+        live_processing.live_method.single_label_pipeline(root)
+        pass
+
+    def _multi_label_live_call():
+        live_processing.live_method.multi_label_pipeline(root)
         pass
 
     def _on_sample():
@@ -327,7 +331,8 @@ def build_ui(root: tk.Tk) -> None:
         # e.g., open IRR calculator dialog
         pass
 
-    tools_menu.add_command(label="Live Process", command=_on_live_process)
+    tools_menu.add_command(label="Single Label Live Call", command=_single_label_live_call)
+    tools_menu.add_command(label="Multi Label Live Call", command=_multi_label_live_call)
     # tools_menu.add_command(label="Sample", command=_on_sample)
     # tools_menu.add_command(label="Calculate Interrater Reliability", command=_on_calc_irr)
 
