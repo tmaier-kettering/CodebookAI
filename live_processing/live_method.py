@@ -18,8 +18,13 @@ from live_processing.response_calls import prompt_response
 from file_handling.json_handling import build_schema
 
 # Initialize OpenAI client with stored API key
-OPENAI_API_KEY = secrets_store.load_api_key()
-client = OpenAI(api_key=OPENAI_API_KEY)
+try:
+    OPENAI_API_KEY = secrets_store.load_api_key()
+    client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+except Exception:
+    # Handle cases where keyring is not available (testing environments)
+    OPENAI_API_KEY = None
+    client = None
 
 
 def send_live_call(parent: Optional[tk.Misc] = None) -> None:

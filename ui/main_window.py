@@ -149,8 +149,8 @@ def call_batch_async(parent: tk.Tk) -> None:
         try:
             result = batch_method.send_batch(root)
             parent.after(0, lambda: print("batch_method finished:", result))
-        except Exception as e:
-            parent.after(0, lambda: messagebox.showerror("Batch Error", str(e)))
+        except Exception as error:
+            parent.after(0, lambda: messagebox.showerror("Batch Error", str(error)))
     threading.Thread(target=_worker, daemon=True).start()
 
 
@@ -166,8 +166,8 @@ def call_batch_download_async(parent: tk.Tk, batch_id: str) -> None:
         try:
             batch_method.get_batch_results(batch_id)
             parent.after(0, lambda: print("Download finished for batch:", batch_id))
-        except Exception as e:
-            parent.after(0, lambda: messagebox.showerror("Download Error", str(e)))
+        except Exception as error:
+            parent.after(0, lambda: messagebox.showerror("Download Error", str(error)))
     threading.Thread(target=_worker, daemon=True).start()
 
 
@@ -191,8 +191,8 @@ def refresh_batches_async(parent: tk.Tk) -> None:
                 populate_treeview(parent.tree_done, cols, done_batches)
 
             parent.after(0, _update_ui)
-        except Exception as e:
-            parent.after(0, lambda: messagebox.showerror("Refresh Error", str(e)))
+        except Exception as error:
+            parent.after(0, lambda: messagebox.showerror("Refresh Error", str(error)))
     threading.Thread(target=_worker, daemon=True).start()
 
 
@@ -208,8 +208,8 @@ def cancel_batch_async(parent: tk.Tk, batch_id: str) -> None:
         try:
             batch_method.cancel_batch(batch_id)
             parent.after(0, lambda: print("Cancel finished for batch:", batch_id))
-        except Exception as e:
-            parent.after(0, lambda: messagebox.showerror("Cancel Error", str(e)))
+        except Exception as error:
+            parent.after(0, lambda: messagebox.showerror("Cancel Error", str(error)))
     threading.Thread(target=_worker, daemon=True).start()
 
 

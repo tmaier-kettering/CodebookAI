@@ -32,9 +32,13 @@ def load_api_key() -> Optional[str]:
     Retrieve the OpenAI API key from the system keyring.
     
     Returns:
-        The stored API key string, or None if no key is stored
+        The stored API key string, or None if no key is stored or keyring unavailable
     """
-    return keyring.get_password(APP_SERVICE, ACCOUNT)
+    try:
+        return keyring.get_password(APP_SERVICE, ACCOUNT)
+    except Exception:
+        # Handle cases where keyring is not available (testing environments)
+        return None
 
 
 def clear_api_key() -> None:
