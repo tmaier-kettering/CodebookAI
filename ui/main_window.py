@@ -13,8 +13,10 @@ from tkinter import ttk, messagebox
 # Handle imports based on how the script is run
 try:
     from settings_window import SettingsWindow
+    from live_processing_dialog import show_live_processing_dialog
 except ImportError:
     from ui.settings_window import SettingsWindow
+    from ui.live_processing_dialog import show_live_processing_dialog
 
 try:
     import live_processing.live_method
@@ -313,13 +315,17 @@ def build_ui(root: tk.Tk) -> None:
     # --- Tools button + dropdown menu (🛠) ---
     tools_menu = tk.Menu(root, tearoff=False)
 
-    def _single_label_live_call():
-        live_processing.live_method.single_label_pipeline(root)
-        pass
-
-    def _multi_label_live_call():
-        live_processing.live_method.multi_label_pipeline(root)
-        pass
+    def _live_processing_call():
+        """Launch the consolidated live processing dialog."""
+        result = show_live_processing_dialog(root)
+        if result:
+            labels_file, quotes_file, is_multi_label = result
+            try:
+                # Import the new processing function
+                from live_processing.live_method import process_live_classification
+                process_live_classification(labels_file, quotes_file, is_multi_label, root)
+            except Exception as e:
+                messagebox.showerror("Processing Error", f"Failed to start live processing:\n{str(e)}", parent=root)
 
     def _on_sample():
         # TODO: hook up "Sample" action here
@@ -331,8 +337,7 @@ def build_ui(root: tk.Tk) -> None:
         # e.g., open IRR calculator dialog
         pass
 
-    tools_menu.add_command(label="Single Label Live Call", command=_single_label_live_call)
-    tools_menu.add_command(label="Multi Label Live Call", command=_multi_label_live_call)
+    tools_menu.add_command(label="Live Processing", command=_live_processing_call)
     # tools_menu.add_command(label="Sample", command=_on_sample)
     # tools_menu.add_command(label="Calculate Interrater Reliability", command=_on_calc_irr)
 

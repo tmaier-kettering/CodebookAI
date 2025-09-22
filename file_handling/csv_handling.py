@@ -168,3 +168,35 @@ def import_csv(parent: Optional[tk.Misc] = None,
     return result["labels"]
 
 
+def import_csv_from_file(file_path: str, has_headers: bool = False) -> List[str]:
+    """
+    Import the first column of a CSV file directly from a file path.
+    
+    This is a utility function for programmatic CSV import without showing a dialog.
+    
+    Args:
+        file_path: Path to the CSV file to read
+        has_headers: Whether to skip the first row (header row)
+        
+    Returns:
+        List of strings from the first column
+        
+    Raises:
+        FileNotFoundError: If the file doesn't exist
+        ValueError: If the file is empty or can't be read
+    """
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            rows = list(csv.reader(f))
+    except Exception as e:
+        raise ValueError(f"Failed to open file: {e}")
+        
+    if not rows:
+        raise ValueError("The file is empty")
+        
+    rows_to_use = rows[1:] if has_headers else rows
+    labels = [r[0] for r in rows_to_use if r]
+    
+    return labels
+
+
