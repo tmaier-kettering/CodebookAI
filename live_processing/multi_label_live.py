@@ -43,10 +43,11 @@ def multi_label_pipeline(parent: Optional[tk.Misc] = None):
         return  # user hit Cancel
 
     class LabeledQuoteMulti(BaseModel):
+        id: int | None = None
         quote: str
         label: List[labels] = Field(..., min_items=1)
         confidence: float = Field(..., ge=0, le=1)
-        model_config = ConfigDict(use_enum_values=True)
+        model_config = ConfigDict(use_enum_values=True, extra='forbid')
 
     total = len(quotes)
 
@@ -67,7 +68,13 @@ def multi_label_pipeline(parent: Optional[tk.Misc] = None):
                     }],
                     text_format=LabeledQuoteMulti,
                 )
-                results.append(resp.output_parsed)
+                decision = resp.output_parsed
+                row = LabeledQuoteMulti(
+                    id=idx,
+                    quote=q,
+                    **decision.model_dump(exclude={'id', 'quote'})  # <- prevents duplicate kwargs
+                )
+                results.append(row)
             except ValidationError as ve:
                 print(f"[VALIDATION ERROR] {str(q)[:60]}... -> {ve}")
             except Exception as e:

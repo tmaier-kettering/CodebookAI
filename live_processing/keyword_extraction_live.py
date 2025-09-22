@@ -37,6 +37,7 @@ def keyword_extraction_pipeline(parent: Optional[tk.Misc] = None):
         return  # user hit Cancel
 
     class KeywordExtraction(BaseModel):
+        id: int | None = None
         quote: str
         keywords: list[str] = Field(..., min_items=1)
         model_config = ConfigDict()
@@ -51,10 +52,17 @@ def keyword_extraction_pipeline(parent: Optional[tk.Misc] = None):
             try:
                 resp = client.responses.parse(
                     model=config.model,
-                    input=[{"role": "user", "content": f"Extract the keywords from this quote: {q}"}],
+                    input=[{"role": "system", "content": "You are an expert at structured data extraction."},
+                        {"role": "user", "content": f"Extract the keywords from this quote: {q}"}],
                     text_format=KeywordExtraction,
                 )
-                results.append(resp.output_parsed)
+                decision = resp.output_parsed
+                row = KeywordExtraction(
+                    id=idx,
+                    quote=q,
+                    **decision.model_dump(exclude={'id', 'quote'})  # <- prevents duplicate kwargs
+                )
+                results.append(row)
             except ValidationError as ve:
                 print(f"[VALIDATION ERROR] {str(q)[:60]}... -> {ve}")
             except Exception as e:
