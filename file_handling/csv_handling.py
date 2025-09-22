@@ -1,3 +1,11 @@
+"""
+CSV file handling with user-friendly import dialogs.
+
+This module provides utilities for importing CSV files through a graphical
+dialog interface, with options for header row handling and data validation.
+The focus is on extracting classification labels from the first column of CSV files.
+"""
+
 from __future__ import annotations
 import csv
 import tkinter as tk

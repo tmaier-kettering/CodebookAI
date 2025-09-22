@@ -1,3 +1,11 @@
+"""
+OpenAI batch processing functionality for text classification.
+
+This module handles the creation, monitoring, and result retrieval of OpenAI
+batch processing jobs. It provides functions to submit large collections of
+text classification requests efficiently using OpenAI's batch API.
+"""
+
 import json
 from tkinter import filedialog
 import pandas as pd
@@ -7,21 +15,49 @@ from openai import OpenAI
 from file_handling.json_handling import generate_batch_jsonl_bytes
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
+from typing import Any, List, Tuple, Optional
 
 
-
-def get_client():
+def get_client() -> OpenAI:
+    """
+    Create and return an authenticated OpenAI client.
+    
+    Returns:
+        Configured OpenAI client instance using stored API key
+        
+    Raises:
+        Exception: If API key is not configured or invalid
+    """
     return OpenAI(api_key=secrets_store.load_api_key())
 
 
-def send_batch(root):
+def send_batch(root: Any) -> Any:
+    """
+    Create and submit a new batch processing job to OpenAI.
+    
+    This function prompts the user to select CSV files containing labels and
+    quotes, generates a properly formatted batch request, and submits it to
+    OpenAI's batch processing API.
+    
+    Args:
+        root: Tkinter root window for file dialog ownership
+        
+    Returns:
+        OpenAI batch object containing job details and status
+        
+    Raises:
+        Exception: If file selection is cancelled, files are invalid, or API call fails
+    """
     client = get_client()
 
+    # Get labels and quotes from user-selected CSV files
     labels = csv_handling.import_csv(root, "Select the labels CSV")
     quotes = csv_handling.import_csv(root, "Select the quotes CSV")
 
+    # Generate the JSONL batch file in memory
     batch_bytes = generate_batch_jsonl_bytes(labels, quotes)
 
+    # Upload the batch file to OpenAI
     batch_input_file = client.files.create(
         file=batch_bytes,
         purpose="batch",
@@ -29,6 +65,7 @@ def send_batch(root):
 
     batch_input_file_id = batch_input_file.id
 
+    # Create the batch processing job
     batch = client.batches.create(
         input_file_id=batch_input_file_id,
         endpoint="/v1/responses",
@@ -41,14 +78,42 @@ def send_batch(root):
     return batch
 
 
-def get_batch_status(batch_id):
+def get_batch_status(batch_id: str) -> Any:
+    """
+    Retrieve the current status of a batch processing job.
+    
+    Args:
+        batch_id: Unique identifier for the batch job
+        
+    Returns:
+        OpenAI batch status object with current job information
+    """
     client = get_client()
     return client.batches.retrieve(batch_id)
 
 
-def get_batch_results(batch_id):
+def get_batch_results(batch_id: str) -> None:
+    """
+    Download and save the results of a completed batch processing job.
+    
+    This function retrieves the output file from a completed batch job,
+    parses the classification results, and prompts the user to save them
+    as a CSV file.
+    
+    Args:
+        batch_id: Unique identifier for the completed batch job
+        
+    Raises:
+        Exception: If batch is not complete, results are malformed, or save fails
+        
+    Note:
+        Results are automatically saved as a DataFrame with columns for
+        quote, label, and confidence from the classification response.
+    """
     client = get_client()
     status = get_batch_status(batch_id)
+    
+    # Download the output file content
     file_response = client.files.content(status.output_file_id).content
     results = [
         json.loads(line)
@@ -56,13 +121,16 @@ def get_batch_results(batch_id):
         if line.strip()
     ]
 
+    # Extract classification results from the API responses
     responses = []
     for res in results:
         response = json.loads(res['response']['body']['output'][1]['content'][0]['text'])
         responses.append(response["classifications"][0])
 
+    # Convert to DataFrame for easy CSV export
     output = pd.DataFrame(responses)
 
+    # Prompt user to save the results
     file_path = filedialog.asksaveasfilename(
         title="Save classifications as CSV",
         defaultextension=".csv",
@@ -70,27 +138,57 @@ def get_batch_results(batch_id):
         initialfile="classifications.csv",
     )
 
-    output.to_csv(file_path, index=False)
+    if file_path:  # Only save if user didn't cancel
+        output.to_csv(file_path, index=False)
 
 
-def cancel_batch(batch_id):
+def cancel_batch(batch_id: str) -> Any:
+    """
+    Cancel a running or queued batch processing job.
+    
+    Args:
+        batch_id: Unique identifier for the batch job to cancel
+        
+    Returns:
+        OpenAI batch object with updated status after cancellation
+    """
     client = get_client()
     return client.batches.cancel(batch_id)
 
 
-def list_batches():
+def list_batches() -> Tuple[List[Tuple[str, str, datetime]], List[Tuple[str, str, datetime]]]:
+    """
+    Retrieve and categorize recent batch processing jobs.
+    
+    This function fetches the most recent batch jobs and separates them into
+    ongoing (active) and completed batches based on their status.
+    
+    Returns:
+        Tuple of (ongoing_batches, done_batches) where each is a list of tuples
+        containing (batch_id, status, created_timestamp)
+        
+    Note:
+        The number of batches returned is limited by config.max_batches.
+        Timestamps are converted to the configured timezone.
+    """
     limit = config.max_batches
     client = get_client()
 
     batches = client.batches.list(limit=limit)
     ongoing_batches = []
     done_batches = []
+    
+    # Categorize batches by status
+    ongoing_statuses = {"validating", "in_progress", "cancelling", "finalizing"}
+    
     for batch in batches:
-        if batch.status == "validating" or batch.status == "in_progress" or batch.status == "cancelling" or batch.status == "finalizing":
-            tuple_of_batch_data = (batch.id, batch.status, datetime.fromtimestamp(batch.created_at, ZoneInfo(config.time_zone)))
+        # Convert timestamp to configured timezone
+        created_time = datetime.fromtimestamp(batch.created_at, ZoneInfo(config.time_zone))
+        tuple_of_batch_data = (batch.id, batch.status, created_time)
+        
+        if batch.status in ongoing_statuses:
             ongoing_batches.append(tuple_of_batch_data)
         else:
-            tuple_of_batch_data = (batch.id, batch.status, datetime.fromtimestamp(batch.created_at, ZoneInfo(config.time_zone)))
             done_batches.append(tuple_of_batch_data)
 
     return ongoing_batches, done_batches

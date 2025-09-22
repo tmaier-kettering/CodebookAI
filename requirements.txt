@@ -1,0 +1,28 @@
+# CodebookAI Dependencies
+
+# Core AI/ML libraries
+openai>=1.100.0          # OpenAI API client for text classification
+pandas>=2.0.0            # Data manipulation and analysis
+
+# GUI framework (typically installed with Python)
+# tkinter is part of Python standard library
+
+# System integration
+keyring>=25.0.0          # Secure credential storage across platforms
+
+# Type hints support (Python < 3.10)
+typing-extensions>=4.0.0  # Enhanced type annotations
+
+# Additional dependencies that may be needed
+# These are automatically installed with the above packages but listed for clarity:
+# - pydantic (data validation, from openai)
+# - httpx (HTTP client, from openai)
+# - numpy (numerical computing, from pandas)
+# - python-dateutil (date utilities, from pandas)
+# - pytz (timezone handling, from pandas)
+
+# Development note:
+# This application also requires Python 3.9+ with tkinter support
+# On Ubuntu/Debian: sudo apt install python3-tk
+# On CentOS/RHEL: sudo yum install tkinter
+# On macOS/Windows: tkinter is included with Python

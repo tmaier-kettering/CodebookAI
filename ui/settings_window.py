@@ -1,3 +1,16 @@
+"""
+Settings configuration window for CodebookAI application.
+
+This module provides a modal settings dialog that allows users to configure:
+- OpenAI API key (stored securely in system keyring)  
+- AI model selection
+- Maximum number of batch jobs to display
+- Timezone for timestamp display
+
+The settings are split between sensitive data (API keys) stored in the OS keyring
+and non-sensitive configuration values stored in the config.py file.
+"""
+
 from __future__ import annotations
 
 import importlib
@@ -14,10 +27,13 @@ from settings.secrets_store import save_api_key, load_api_key, clear_api_key
 
 class SettingsWindow(tk.Toplevel):
     """
-    A modal-ish settings editor.
-    - Reads current values from the config module (non-secrets).
-    - Reads/saves the API key via the OS keyring (secrets_store).
-    - Writes ONLY non-secret settings back to config.py (model, max_batches).
+    Modal settings configuration dialog.
+    
+    This window provides a user interface for configuring application settings
+    including API credentials, model selection, and display preferences.
+    
+    The window handles both secure settings (API keys via keyring) and 
+    non-secure settings (configuration file updates).
     """
     def __init__(self, parent: tk.Tk | tk.Toplevel):
         super().__init__(parent)
