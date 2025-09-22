@@ -17,14 +17,18 @@ except ImportError:
     from ui.settings_window import SettingsWindow
 
 try:
-    import live_processing.live_method
+    import live_processing.multi_label_live
+    import live_processing.single_label_live
+    import live_processing.keyword_extraction_live
     from batch_processing import batch_method
     from batch_processing.batch_method import list_batches
 except ImportError:
     import sys
     import os
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    import live_processing.live_method
+    import live_processing.multi_label_live
+    import live_processing.single_label_live
+    import live_processing.keyword_extraction_live
     from batch_processing import batch_method
     from batch_processing.batch_method import list_batches
 
@@ -314,12 +318,15 @@ def build_ui(root: tk.Tk) -> None:
     tools_menu = tk.Menu(root, tearoff=False)
 
     def _single_label_live_call():
-        live_processing.live_method.single_label_pipeline(root)
+        live_processing.single_label_live.single_label_pipeline(root)
         pass
 
     def _multi_label_live_call():
-        live_processing.live_method.multi_label_pipeline(root)
+        live_processing.multi_label_live.multi_label_pipeline(root)
         pass
+
+    def _keyword_extraction_live_call():
+        live_processing.keyword_extraction_live.keyword_extraction_pipeline(root)
 
     def _on_sample():
         # TODO: hook up "Sample" action here
@@ -333,6 +340,7 @@ def build_ui(root: tk.Tk) -> None:
 
     tools_menu.add_command(label="Single Label Live Call", command=_single_label_live_call)
     tools_menu.add_command(label="Multi Label Live Call", command=_multi_label_live_call)
+    tools_menu.add_command(label="Keyword Extraction Live Call", command=_keyword_extraction_live_call)
     # tools_menu.add_command(label="Sample", command=_on_sample)
     # tools_menu.add_command(label="Calculate Interrater Reliability", command=_on_calc_irr)
 

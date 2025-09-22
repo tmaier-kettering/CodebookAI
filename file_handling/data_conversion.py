@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from enum import Enum
 from tkinter import filedialog, messagebox
 
@@ -27,3 +28,32 @@ def save_as_csv(df: "pd.DataFrame"):
     else:
         messagebox.showinfo("Cancelled", "Save operation cancelled.")
 
+def to_long_df(records):
+    """
+    records: iterable of objects with .model_dump() -> dict
+    - Builds a DataFrame from whatever keys exist.
+    - Flattens nested dicts.
+    - Explodes ALL list-like columns (lists/tuples/sets).
+    """
+    # 1) Collect dicts (model_dump) and flatten nested dicts
+    raw = [r.model_dump() for r in records]
+    df = pd.json_normalize(raw, sep='.')  # flattens nested dicts into columns like 'meta.author'
+
+    # 2) Detect list-like columns (skip strings/bytes)
+    def is_listy(x):
+        return isinstance(x, Sequence) and not isinstance(x, (str, bytes))
+
+    list_cols = [
+        c for c in df.columns
+        if df[c].apply(is_listy).any()
+    ]
+
+    # 3) Explode all list-like columns (handles 0, 1, or many)
+    if list_cols:
+        df = df.explode(list_cols, ignore_index=True)
+
+    # 4) (Optional) drop rows where any exploded col is NA
+    if list_cols:
+        df = df.dropna(subset=list_cols, how='any')
+
+    return df
