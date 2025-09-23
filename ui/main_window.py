@@ -39,6 +39,7 @@ except ImportError:
     import live_processing.keyword_extraction_live
 
 APP_TITLE = "CodebookAI"
+APP_SUBTITLE = "A qualitative research tool based on OpenAI's Playground API."
 WINDOW_SIZE = (1000, 620)  # width, height
 
 
@@ -106,8 +107,10 @@ def build_ui(root: tk.Tk) -> None:
     ToolTip(tools_btn, "Tools menu - Access live processing and other utilities")
 
     # Title (center)
-    title_lbl = ttk.Label(header, text=APP_TITLE, font=("Segoe UI", 18, "bold"))
+    title_lbl = ttk.Label(header, text=APP_TITLE, font=("Segoe UI", 24, "bold"))
     title_lbl.grid(row=0, column=1, sticky="n", pady=(2, 0))
+    subtitle_lbl = ttk.Label(header, text=APP_SUBTITLE, font=("Segoe UI", 12, "italic"), wraplength=500, justify="center")
+    subtitle_lbl.grid(row=1, column=1, sticky="n", pady=(2, 0))
 
     # Settings (right)
     settings_btn = ttk.Button(header, text="⚙", width=3, command=lambda: SettingsWindow(root))
