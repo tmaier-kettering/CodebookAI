@@ -10,7 +10,7 @@ import json
 from tkinter import filedialog
 import pandas as pd
 from settings import config, secrets_store
-from file_handling import csv_handling
+from file_handling import data_import
 from openai import OpenAI
 from file_handling.json_handling import generate_batch_jsonl_bytes
 from datetime import datetime, timezone
@@ -51,10 +51,10 @@ def send_batch(root: Any) -> Any:
     client = get_client()
 
     # Get labels and quotes from user-selected CSV files
-    labels, labels_filename = csv_handling.import_csv(root, "Select the labels CSV")
+    labels, labels_filename = csv_handling.import_data(root, "Select the labels CSV")
     if labels is None:
         return  # user hit Cancel
-    quotes, quotes_filename = csv_handling.import_csv(root, "Select the quotes CSV")
+    quotes, quotes_filename = csv_handling.import_data(root, "Select the quotes CSV")
     if quotes is None:
         return  # user hit Cancel
 

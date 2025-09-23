@@ -10,7 +10,7 @@ from typing import Optional
 import tkinter as tk
 from pydantic import BaseModel, ValidationError, Field, ConfigDict
 from openai import OpenAI
-from file_handling.csv_handling import import_csv
+from file_handling.data_import import import_data
 from file_handling.data_conversion import save_as_csv, to_long_df
 from settings import secrets_store, config
 
@@ -32,7 +32,7 @@ def keyword_extraction_pipeline(parent: Optional[tk.Misc] = None):
     show progress, then save results to CSV.
     """
     # Get quotes CSV
-    quotes, quotes_filename = import_csv(parent, "Select the quotes CSV")
+    quotes, quotes_filename = import_data(parent, "Select the quotes CSV")
     if quotes is None:
         return  # user hit Cancel
 

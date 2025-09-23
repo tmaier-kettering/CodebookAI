@@ -10,7 +10,7 @@ from typing import Optional, List
 import tkinter as tk
 from pydantic import BaseModel, ValidationError, Field, ConfigDict
 from openai import OpenAI
-from file_handling.csv_handling import import_csv
+from file_handling.data_import import import_data
 from file_handling.data_conversion import make_str_enum, save_as_csv, to_long_df
 from settings import secrets_store, config
 
@@ -32,13 +32,13 @@ def multi_label_pipeline(parent: Optional[tk.Misc] = None):
     show progress, then save results to CSV.
     """
     # Get labels CSV; if user cancels, just exit cleanly
-    label_values, labels_filename = import_csv(parent, "Select the labels CSV")
+    label_values, labels_filename = import_data(parent, "Select the labels CSV")
     if label_values is None:
         return  # user hit Cancel
     labels = make_str_enum("Label", label_values)
 
     # Get quotes CSV
-    quotes, quotes_filename = import_csv(parent, "Select the quotes CSV")
+    quotes, quotes_filename = import_data(parent, "Select the quotes CSV")
     if quotes is None:
         return  # user hit Cancel
 

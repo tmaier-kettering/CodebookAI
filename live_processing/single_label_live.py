@@ -10,7 +10,7 @@ from typing import Optional
 import tkinter as tk
 from pydantic import BaseModel, ValidationError, Field, ConfigDict
 from openai import OpenAI
-from file_handling.csv_handling import import_csv
+from file_handling.data_import import import_data
 from file_handling.data_conversion import make_str_enum, save_as_csv, to_long_df
 from settings import secrets_store, config
 
@@ -31,16 +31,18 @@ def single_label_pipeline(parent: Optional[tk.Misc] = None):
     Prompt for labels/quotes CSVs, classify each quote with exactly one label,
     show progress, then save results to CSV.
     """
-    # Get labels CSV; if user cancels, just exit cleanly
-    label_values, labels_filename = import_csv(parent, "Select the labels CSV")
-    if label_values is None:
+    # Get labels data
+    from_import = import_data(parent, "Select the labels data")
+    if from_import is None:
         return  # user hit Cancel
+    label_values, labels_nickname = from_import
     labels = make_str_enum("Label", label_values)
 
-    # Get quotes CSV
-    quotes, quotes_filename = import_csv(parent, "Select the quotes CSV")
-    if quotes is None:
+    # Get quotes data
+    from_import = import_data(parent, "Select the quotes data")
+    if from_import is None:
         return  # user hit Cancel
+    quotes, quotes_nickname = from_import
 
     class LabeledQuote(BaseModel):
         id: int | None = None
@@ -63,7 +65,7 @@ def single_label_pipeline(parent: Optional[tk.Misc] = None):
                     input=[{
                         "role": "user",
                         "content": (
-                            f"Label this quote with exactly one emotion from the allowed set.\n"
+                            f"Label this quote with exactly one label from the allowed set.\n"
                             f"Quote: {q}"
                         ),
                     }],
