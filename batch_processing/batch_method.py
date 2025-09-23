@@ -7,9 +7,9 @@ text classification requests efficiently using OpenAI's batch API.
 """
 
 import json
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 import pandas as pd
-
+from batch_processing.batch_error_handling import handle_batch_fail
 from file_handling.data_import import import_data
 from settings import config, secrets_store
 from openai import OpenAI
@@ -123,6 +123,11 @@ def get_batch_results(batch_id: str) -> None:
     """
     client = get_client()
     status = get_batch_status(batch_id)
+
+    # Check if the batch has failed
+    if status.output_file_id is None:
+        handle_batch_fail(client, status)
+        return
 
     # Download the output file content
     file_response = client.files.content(status.output_file_id).content
