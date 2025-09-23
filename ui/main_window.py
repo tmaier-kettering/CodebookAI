@@ -9,6 +9,8 @@ The interface displays ongoing and completed batch jobs in tabbed tables.
 import tkinter as tk
 from tkinter import ttk
 
+from live_processing.sampler import sample_data
+
 # Handle imports based on how the script is run
 try:
     from settings_window import SettingsWindow
@@ -84,8 +86,7 @@ def build_ui(root: tk.Tk) -> None:
         live_processing.keyword_extraction_live.keyword_extraction_pipeline(root)
 
     def _on_sample():
-        # TODO: hook up "Sample" action here
-        # e.g., open a sample dialog or load sample data
+        sample_data(root)
         pass
 
     def _on_calc_irr():
@@ -96,7 +97,7 @@ def build_ui(root: tk.Tk) -> None:
     tools_menu.add_command(label="Single Label Live Call", command=_single_label_live_call)
     tools_menu.add_command(label="Multi Label Live Call", command=_multi_label_live_call)
     tools_menu.add_command(label="Keyword Extraction Live Call", command=_keyword_extraction_live_call)
-    # tools_menu.add_command(label="Sample", command=_on_sample)
+    tools_menu.add_command(label="Sample", command=_on_sample)
     # tools_menu.add_command(label="Calculate Interrater Reliability", command=_on_calc_irr)
 
     tools_btn = ttk.Button(header, text="🛠", width=3,
