@@ -1,32 +1,6 @@
 # CodebookAI
 
-CodebookAI is a powerful text classification application that leverages OpenAI's advanced language models to automatically categorize text snippets into predefined labels. The application supports both batch processing for large datasets and real-time processing for immediate results.
-
-## Features
-
-### 🚀 Batch Processing
-- **Efficient Large-Scale Processing**: Submit hundreds or thousands of text snippets for classification using OpenAI's batch API
-- **Cost-Effective**: Batch processing offers significant cost savings compared to individual API calls
-- **Background Processing**: Jobs run in the background with 24-hour completion windows
-- **Status Monitoring**: Track ongoing and completed batch jobs with real-time status updates
-- **Easy Result Export**: Download classification results as CSV files with confidence scores
-
-### ⚡ Live Processing
-- **Real-Time Classification**: Process text snippets immediately using OpenAI's API
-- **Interactive Workflow**: Perfect for smaller datasets or when immediate results are needed
-- **Progress Tracking**: Monitor processing status for each text snippet
-
-### 🛠 User-Friendly Interface
-- **Intuitive GUI**: Clean, modern interface built with tkinter
-- **Tabbed Organization**: Separate views for ongoing and completed batch jobs
-- **Context Menus**: Right-click actions for batch management (cancel, download, retry)
-- **Tooltips**: Helpful hover text explains button functions
-- **CSV Import**: Easy import of labels and text data from CSV files
-
-### 🔐 Secure Configuration
-- **Secure API Key Storage**: API keys stored safely in your system's keyring (Windows Credential Manager, macOS Keychain, Linux Secret Service)
-- **Configurable Settings**: Customize AI model, batch limits, and timezone preferences
-- **No Hardcoded Secrets**: Sensitive data never stored in configuration files
+CodebookAI is a powerful text classification application that leverages OpenAI's language models to perform a variety of tasks - primarily to automatically categorize text snippets into predefined labels. The application supports both batch processing for large datasets and real-time processing for immediate results.
 
 ## Installation
 
@@ -131,13 +105,6 @@ text
 - **Download**: Right-click completed batches to save results
 - **Refresh**: Click refresh (↻) to update status information
 
-### CSV Format Requirements
-
-- **Headers**: First row can be headers (will be skipped automatically)
-- **Single Column**: Only the first column is used for data
-- **Text Format**: Ensure text is properly quoted if it contains commas
-- **Encoding**: UTF-8 encoding recommended
-
 ## Configuration
 
 ### Settings Options
@@ -146,95 +113,6 @@ text
 - **Model**: AI model to use (default: o3)
 - **Max Batches**: Number of recent batches to display (default: 4)
 - **Timezone**: Timezone for displaying batch creation times
-
-### Supported Models
-
-CodebookAI works with OpenAI's latest models:
-- **o3** (default): Most capable reasoning model
-- **gpt-4o**: Fast and capable general model
-- **gpt-4**: Highly capable general model
-
-## Output Format
-
-Classification results are saved as CSV files with these columns:
-- **quote**: The original text that was classified
-- **label**: The assigned classification label
-- **confidence**: Confidence score (0.0 to 1.0)
-
-Example output:
-```csv
-quote,label,confidence
-"This product is amazing!",Positive,0.95
-"I hate this service",Negative,0.92
-"It's okay, nothing special",Neutral,0.87
-```
-
-## Troubleshooting
-
-### Common Issues
-
-**API Key Errors**:
-- Verify your API key is correct and has sufficient credits
-- Check that your key has access to the selected model
-
-**CSV Import Problems**:
-- Ensure CSV files are properly formatted
-- Check file encoding (UTF-8 recommended)
-- Verify files aren't corrupted or locked by other applications
-
-**Batch Processing Delays**:
-- Batch jobs can take up to 24 hours to complete
-- Large batches take longer than small ones
-- Check OpenAI's status page for service issues
-
-**UI Freezing During Live Processing**:
-- This is expected behavior - live processing blocks the UI
-- Use batch processing for large datasets
-- Consider breaking large datasets into smaller chunks
-
-### Getting Help
-
-If you encounter issues:
-1. Check the application's error messages
-2. Verify your CSV file format
-3. Ensure your API key is valid and has credits
-4. Check your internet connection
-
-## Privacy & Security
-
-- **API Keys**: Stored securely in your system's native keyring
-- **Data**: Text data is sent to OpenAI for processing according to their privacy policy
-- **Local Storage**: No sensitive data stored in application files
-- **Network**: HTTPS connections used for all API communications
-
-## Development
-
-CodebookAI is built with:
-- **Python 3.9+**: Core application
-- **tkinter**: GUI framework  
-- **OpenAI Python SDK**: API integration
-- **pandas**: Data manipulation
-- **keyring**: Secure credential storage
-
-### Project Structure
-```
-CodebookAI/
-├── ui/                     # User interface modules
-│   ├── main_window.py     # Main application window
-│   └── settings_window.py # Settings configuration dialog
-├── batch_processing/       # Batch job management
-│   └── batch_method.py    # OpenAI batch API integration
-├── live_processing/        # Real-time processing
-│   ├── live_method.py     # Live processing workflow
-│   └── response_calls.py  # API response handling
-├── file_handling/          # Data import/export
-│   ├── csv_handling.py    # CSV file operations
-│   └── json_handling.py   # JSON schema and batch files
-├── settings/              # Configuration management
-│   ├── config.py          # Non-sensitive settings
-│   └── secrets_store.py   # Secure credential storage
-└── requirements.txt       # Python dependencies
-```
 
 ## License
 
