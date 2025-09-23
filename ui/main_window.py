@@ -27,6 +27,7 @@ try:
     import live_processing.multi_label_live
     import live_processing.single_label_live
     import live_processing.keyword_extraction_live
+    import interrater_reliability
 except ImportError:
     import sys
     import os
@@ -34,6 +35,7 @@ except ImportError:
     import live_processing.multi_label_live
     import live_processing.single_label_live
     import live_processing.keyword_extraction_live
+    import interrater_reliability
 
 APP_TITLE = "CodebookAI"
 WINDOW_SIZE = (1000, 620)  # width, height
@@ -89,15 +91,14 @@ def build_ui(root: tk.Tk) -> None:
         pass
 
     def _on_calc_irr():
-        # TODO: hook up "Calculate Interrater Reliability" action here
-        # e.g., open IRR calculator dialog
-        pass
+        # Hook up "Calculate Interrater Reliability" action
+        interrater_reliability.calculate_interrater_reliability(root)
 
     tools_menu.add_command(label="Single Label Live Call", command=_single_label_live_call)
     tools_menu.add_command(label="Multi Label Live Call", command=_multi_label_live_call)
     tools_menu.add_command(label="Keyword Extraction Live Call", command=_keyword_extraction_live_call)
     # tools_menu.add_command(label="Sample", command=_on_sample)
-    # tools_menu.add_command(label="Calculate Interrater Reliability", command=_on_calc_irr)
+    tools_menu.add_command(label="Calculate Interrater Reliability", command=_on_calc_irr)
 
     tools_btn = ttk.Button(header, text="🛠", width=3,
                            command=lambda: popup_menu_below_widget(tools_btn, tools_menu))
