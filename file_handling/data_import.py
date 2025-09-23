@@ -20,14 +20,14 @@ from typing import Optional, Sequence
 
 # Import the main function from the refactored import dialog module
 try:
-    from .import_dialog import import_data
+    from file_handling.import_dialog import import_data
 except ImportError:
     # Fallback for running from file_handling directory
-    from import_dialog import import_data
+    from file_handling.import_dialog import import_data
 
 # Re-export utility functions for backward compatibility
 try:
-    from .tabular_loaders import (
+    from file_handling.tabular_loaders import (
         is_excel as _is_excel,
         is_text_table as _is_text_table, 
         read_excel as _read_excel,
@@ -35,14 +35,14 @@ try:
         read_text_table as _read_text_table,
         load_tabular as _load_tabular
     )
-    from .tk_utils import (
+    from file_handling.tk_utils import (
         ensure_parent as _ensure_parent,
         safe_destroy as _safe_destroy
     )
-    from .preview_components import RadioHeader as _RadioHeader
+    from file_handling.preview_components import RadioHeader as _RadioHeader
 except ImportError:
     # Fallback for running from file_handling directory
-    from tabular_loaders import (
+    from file_handling.tabular_loaders import (
         is_excel as _is_excel,
         is_text_table as _is_text_table,
         read_excel as _read_excel,
@@ -50,11 +50,11 @@ except ImportError:
         read_text_table as _read_text_table,
         load_tabular as _load_tabular
     )
-    from tk_utils import (
+    from file_handling.tk_utils import (
         ensure_parent as _ensure_parent,
         safe_destroy as _safe_destroy
     )
-    from preview_components import RadioHeader as _RadioHeader
+    from file_handling.preview_components import RadioHeader as _RadioHeader
 
 
 # Make the main function available at module level (primary public API)

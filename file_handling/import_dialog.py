@@ -16,14 +16,14 @@ from tkinter import filedialog, messagebox, ttk
 
 # Import from our refactored modules
 try:
-    from .tabular_loaders import load_tabular
-    from .tk_utils import ensure_parent, safe_destroy
-    from .preview_components import RadioHeader, PreviewManager
+    from file_handling.tabular_loaders import load_tabular
+    from file_handling.tk_utils import ensure_parent, safe_destroy
+    from file_handling.preview_components import RadioHeader, PreviewManager
 except ImportError:
     # Fallback for running from file_handling directory
-    from tabular_loaders import load_tabular
-    from tk_utils import ensure_parent, safe_destroy
-    from preview_components import RadioHeader, PreviewManager
+    from file_handling.tabular_loaders import load_tabular
+    from file_handling.tk_utils import ensure_parent, safe_destroy
+    from file_handling.preview_components import RadioHeader, PreviewManager
 
 
 def import_data(
