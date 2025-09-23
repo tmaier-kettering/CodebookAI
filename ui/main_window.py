@@ -9,6 +9,7 @@ The interface displays ongoing and completed batch jobs in tabbed tables.
 import tkinter as tk
 from tkinter import ttk
 
+from live_processing.reliability_calculator import reliability_wizard_main
 from live_processing.sampler import sample_data
 
 # Handle imports based on how the script is run
@@ -90,15 +91,14 @@ def build_ui(root: tk.Tk) -> None:
         pass
 
     def _on_calc_irr():
-        # TODO: hook up "Calculate Interrater Reliability" action here
-        # e.g., open IRR calculator dialog
+        reliability_wizard_main(root)
         pass
 
     tools_menu.add_command(label="Single Label Live Call", command=_single_label_live_call)
     tools_menu.add_command(label="Multi Label Live Call", command=_multi_label_live_call)
     tools_menu.add_command(label="Keyword Extraction Live Call", command=_keyword_extraction_live_call)
     tools_menu.add_command(label="Sample", command=_on_sample)
-    # tools_menu.add_command(label="Calculate Interrater Reliability", command=_on_calc_irr)
+    tools_menu.add_command(label="Calculate Interrater Reliability", command=_on_calc_irr)
 
     tools_btn = ttk.Button(header, text="🛠", width=3,
                            command=lambda: popup_menu_below_widget(tools_btn, tools_menu))
