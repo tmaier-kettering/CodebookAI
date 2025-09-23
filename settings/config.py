@@ -7,7 +7,7 @@ separately using the keyring system.
 """
 
 # OpenAI model to use for text classification
-model = 'o3'
+model = 'gpt-4o'
 
 # Maximum number of batch jobs to display in the UI
 max_batches = 4

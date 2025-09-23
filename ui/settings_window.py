@@ -101,24 +101,24 @@ class SettingsWindow(tk.Toplevel):
         self.cmb_model.grid(row=1, column=1, columnspan=2, sticky="w", **pad)
 
         # max_batches
-        ttk.Label(frm, text="Max Batches:").grid(row=2, column=0, sticky="w", **pad)
+        ttk.Label(frm, text="Max Batches:").grid(row=3, column=0, sticky="w", **pad)
         self.ent_max = ttk.Spinbox(frm, from_=1, to=1000, textvariable=self.var_max_batches, width=10)
         self.ent_max.grid(row=2, column=1, sticky="w", **pad)
 
         # Buttons
         btns = ttk.Frame(frm)
-        btns.grid(row=3, column=0, columnspan=3, sticky="e", pady=(12, 0))
+        btns.grid(row=4, column=0, columnspan=3, sticky="e", pady=(12, 0))
 
         # Timezone
         ttk.Label(frm, text="Time Zone:").grid(row=1, column=0, sticky="w", **pad)
-        self.cmb_model = ttk.Combobox(
+        self.cmb_timezone = ttk.Combobox(
             frm,
             textvariable=self.var_timezone,
             width=45,
             values=sorted(available_timezones()),
             state="readonly"
         )
-        self.cmb_model.grid(row=1, column=1, columnspan=2, sticky="w", **pad)
+        self.cmb_timezone.grid(row=1, column=1, columnspan=2, sticky="w", **pad)
 
         ttk.Button(btns, text="Reset to File", command=self._reset_from_file).grid(row=0, column=0, padx=6)
         ttk.Button(btns, text="Clear Key", command=self._clear_key).grid(row=0, column=1, padx=6)

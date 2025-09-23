@@ -9,13 +9,14 @@ text classification requests efficiently using OpenAI's batch API.
 import json
 from tkinter import filedialog
 import pandas as pd
+
+from file_handling.data_import import import_data
 from settings import config, secrets_store
-from file_handling import data_import
 from openai import OpenAI
 from file_handling.json_handling import generate_batch_jsonl_bytes
-from datetime import datetime, timezone
+from datetime import datetime
 from zoneinfo import ZoneInfo
-from typing import Any, List, Tuple, Optional
+from typing import Any
 
 
 def get_client() -> OpenAI:
@@ -50,13 +51,17 @@ def send_batch(root: Any) -> Any:
     """
     client = get_client()
 
-    # Get labels and quotes from user-selected CSV files
-    labels, labels_filename = csv_handling.import_data(root, "Select the labels CSV")
-    if labels is None:
+    # Get labels data
+    from_import = import_data(root, "Select the labels data")
+    if from_import is None:
         return  # user hit Cancel
-    quotes, quotes_filename = csv_handling.import_data(root, "Select the quotes CSV")
-    if quotes is None:
+    labels, labels_nickname = from_import
+
+    # Get quotes data
+    from_import = import_data(root, "Select the quotes data")
+    if from_import is None:
         return  # user hit Cancel
+    quotes, quotes_nickname = from_import
 
 
     # Generate the JSONL batch file in memory
@@ -77,8 +82,8 @@ def send_batch(root: Any) -> Any:
         completion_window="24h",
         metadata={
             "model": config.model,
-            "labels_filename": labels_filename,
-            "quotes_filename": quotes_filename
+            "labels_nickname": labels_nickname,
+            "quotes_nickname": quotes_nickname
         }
     )
 
@@ -198,8 +203,8 @@ def list_batches():
             batch.status,
             created_time,
             md.get("model", ""),
-            md.get("labels_filename", ""),
-            md.get("quotes_filename", ""),
+            md.get("labels_nickname", ""),
+            md.get("quotes_nickname", ""),
         )
 
         if batch.status in ongoing_statuses:

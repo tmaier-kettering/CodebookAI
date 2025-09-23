@@ -31,16 +31,18 @@ def multi_label_pipeline(parent: Optional[tk.Misc] = None):
     Prompt for labels/quotes CSVs, classify each quote with 1+ labels,
     show progress, then save results to CSV.
     """
-    # Get labels CSV; if user cancels, just exit cleanly
-    label_values, labels_filename = import_data(parent, "Select the labels CSV")
-    if label_values is None:
+    # Get labels data
+    from_import = import_data(parent, "Select the labels data")
+    if from_import is None:
         return  # user hit Cancel
+    label_values, labels_nickname = from_import
     labels = make_str_enum("Label", label_values)
 
-    # Get quotes CSV
-    quotes, quotes_filename = import_data(parent, "Select the quotes CSV")
-    if quotes is None:
+    # Get quotes data
+    from_import = import_data(parent, "Select the quotes data")
+    if from_import is None:
         return  # user hit Cancel
+    quotes, quotes_nickname = from_import
 
     class LabeledQuoteMulti(BaseModel):
         id: int | None = None

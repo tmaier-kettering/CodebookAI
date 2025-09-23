@@ -31,10 +31,11 @@ def keyword_extraction_pipeline(parent: Optional[tk.Misc] = None):
     Prompt for quotes CSVs, extract keywords from each quote,
     show progress, then save results to CSV.
     """
-    # Get quotes CSV
-    quotes, quotes_filename = import_data(parent, "Select the quotes CSV")
-    if quotes is None:
+    # Get quotes data
+    from_import = import_data(parent, "Select the quotes data")
+    if from_import is None:
         return  # user hit Cancel
+    quotes, quotes_nickname = from_import
 
     class KeywordExtraction(BaseModel):
         id: int | None = None
