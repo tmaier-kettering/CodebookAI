@@ -151,7 +151,7 @@ class _RadioHeader(ttk.Frame):
             self.canvas.configure(scrollregion=bbox)
 
     def _on_canvas_configure(self, event):
-        self.canvas.itemconfig(self.window_id, width=event.width)
+        self.canvas.itemconfig(self.window_id, width=max(event.width, self.inner.winfo_reqwidth()))
 
     def _on_scroll(self, *args):
         self.canvas.xview(*args)
@@ -177,6 +177,8 @@ class _RadioHeader(ttk.Frame):
             b.grid(row=0, column=idx, padx=(6 if idx == 0 else 12, 12), pady=4, sticky="w")
             self._radios.append(b)
         self.inner.update_idletasks()
+        self.canvas.configure(scrollregion=self.canvas.bbox(self.window_id))
+        self.canvas.itemconfig(self.window_id, width=max(self.canvas.winfo_width(), self.inner.winfo_reqwidth()))
         self.canvas.xview_moveto(0.0)
 
 
@@ -238,7 +240,7 @@ def import_data(
     ttk.Button(dlg, text="Browse…", command=browse_file).grid(row=1, column=2, padx=(4, 10), pady=4, sticky="w")
 
     # Header checkbox
-    has_headers = tk.BooleanVar(master=dlg, value=False)
+    has_headers = tk.BooleanVar(master=dlg, value=True)
     header_chk = ttk.Checkbutton(
         dlg, text="File has headers (skip first row)", variable=has_headers, command=lambda: _refresh_preview()
     )
@@ -267,16 +269,8 @@ def import_data(
     hscroll = ttk.Scrollbar(preview_frame, orient="horizontal")
     hscroll.grid(row=1, column=0, sticky="ew")
 
-    def _tree_xscroll(*args):
-        tree.xview(*args)
-        radio_header.xview(*args)
-
-    def _xscroll_set(first, last):
-        hscroll.set(first, last)
-        radio_header.xscrollcommand(first, last)
-
-    tree.configure(yscrollcommand=vscroll.set, xscrollcommand=_xscroll_set)
-    hscroll.configure(command=_tree_xscroll)
+    tree.configure(yscrollcommand=vscroll.set, xscrollcommand=hscroll.set)
+    hscroll.configure(command=tree.xview)
 
     # ---------------- Nickname controls ----------------
     # Options: 0 = filename, 1 = selected column header, 2 = other (entry)

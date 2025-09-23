@@ -75,7 +75,7 @@ def refresh_batches_async(parent: tk.Tk) -> None:
             ongoing_batches, done_batches = list_batches()
 
             def _update_ui():
-                cols = ("id", "status", "created_at", "model", "input file name", "output file name")
+                cols = ("id", "status", "created_at", "model", "nicknames(s)")
                 populate_treeview(parent.tree_ongoing, cols, ongoing_batches)
                 populate_treeview(parent.tree_done, cols, done_batches)
 

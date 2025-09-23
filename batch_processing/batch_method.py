@@ -82,8 +82,7 @@ def send_batch(root: Any) -> Any:
         completion_window="24h",
         metadata={
             "model": config.model,
-            "labels_nickname": labels_nickname,
-            "quotes_nickname": quotes_nickname
+            "nicknames(s)": (labels_nickname, quotes_nickname),
         }
     )
 
@@ -203,8 +202,7 @@ def list_batches():
             batch.status,
             created_time,
             md.get("model", ""),
-            md.get("labels_nickname", ""),
-            md.get("quotes_nickname", ""),
+            md.get("nicknames(s)", "")
         )
 
         if batch.status in ongoing_statuses:

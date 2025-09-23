@@ -178,8 +178,3 @@ def build_ui(root: tk.Tk) -> None:
     # Initial load
     refresh_batches_async(root)
 
-
-if __name__ == "__main__":
-    root = tk.Tk()
-    build_ui(root)
-    root.mainloop()
