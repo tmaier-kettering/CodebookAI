@@ -37,7 +37,7 @@ pip install -r requirements.txt
 ### 1. First Launch
 Run the application:
 ```bash
-python ui/main_window.py
+python main.py
 ```
 
 ### 2. Configure API Key
@@ -110,7 +110,7 @@ text
 ### Settings Options
 
 - **API Key**: Your OpenAI API key (stored securely)
-- **Model**: AI model to use (default: o3)
+- **Model**: AI model to use (default: gpt-4o)
 - **Max Batches**: Number of recent batches to display (default: 4)
 - **Timezone**: Timezone for displaying batch creation times
 
