@@ -86,7 +86,6 @@ def build_ui(root: tk.Tk) -> None:
         root: The main Tkinter window to build the UI in
     """
     root.title(APP_TITLE)
-    center_window(root, *WINDOW_SIZE)
 
     # ===== Top-level grid: header, spacer, table area =====
     root.columnconfigure(0, weight=1)
@@ -153,7 +152,11 @@ def build_ui(root: tk.Tk) -> None:
     batch_methods_menu = tk.Menu(llm_tools_menu, tearoff=False)
     batch_methods_menu.add_command(
         label="Single Label Text Classification",
-        command=lambda: call_batch_async(root),
+        command=lambda: call_batch_async(root, type="single_label"),
+    )
+    batch_methods_menu.add_command(
+        label="Multi-Label Text Classification",
+        command=lambda: call_batch_async(root, type="multi_label"),
     )
 
     llm_tools_menu.add_cascade(label="Live Methods", menu=live_methods_menu)
@@ -237,6 +240,7 @@ def build_ui(root: tk.Tk) -> None:
 
     # Initial load
     refresh_batches_async(root)
+    center_window(root, *WINDOW_SIZE)
 
 
 if __name__ == "__main__":

@@ -13,7 +13,7 @@ from batch_processing.batch_error_handling import handle_batch_fail
 from file_handling.data_import import import_data
 from settings import config, secrets_store
 from openai import OpenAI
-from file_handling.json_handling import generate_batch_jsonl_bytes
+from file_handling.json_handling import generate_single_label_batch, generate_multi_label_batch
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Any
@@ -32,7 +32,7 @@ def get_client() -> OpenAI:
     return OpenAI(api_key=secrets_store.load_api_key())
 
 
-def send_batch(root: Any) -> Any:
+def send_batch(root: Any, type: str) -> Any:
     """
     Create and submit a new batch processing job to OpenAI.
 
@@ -63,9 +63,11 @@ def send_batch(root: Any) -> Any:
         return  # user hit Cancel
     quotes, quotes_nickname = from_import
 
-
     # Generate the JSONL batch file in memory
-    batch_bytes = generate_batch_jsonl_bytes(labels, quotes)
+    if type == "single_label":
+        batch_bytes = generate_single_label_batch(labels, quotes)
+    elif type == "multi_label":
+        batch_bytes = generate_multi_label_batch(labels, quotes)
 
     # Upload the batch file to OpenAI
     batch_input_file = client.files.create(
@@ -82,7 +84,8 @@ def send_batch(root: Any) -> Any:
         completion_window="24h",
         metadata={
             "model": config.model,
-            "nicknames(s)": (labels_nickname, quotes_nickname),
+            "type": type,
+            "nicknames(s)": ",".join(map(str,(labels_nickname, quotes_nickname)))
         }
     )
 
@@ -207,6 +210,7 @@ def list_batches():
             batch.status,
             created_time,
             md.get("model", ""),
+            md.get("type", ""),
             md.get("nicknames(s)", "")
         )
 

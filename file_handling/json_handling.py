@@ -8,136 +8,148 @@ multiple text classification requests efficiently.
 
 from __future__ import annotations
 import io, json
-from typing import Iterable, List, Sequence
-from settings import config
+from enum import Enum
+from io import BytesIO
+from typing import Optional, List
+import tkinter as tk
+from pydantic import BaseModel, ConfigDict, Field
+
+from file_handling.data_conversion import make_str_enum
+from file_handling.data_import import import_data
+from settings.config import model
 
 
-def build_schema(allowed_labels: list[str]) -> dict:
+def forbid_additional_props(schema: dict) -> dict:
+    """Recursively set additionalProperties:false on every object schema."""
+    if not isinstance(schema, dict):
+        return schema
+
+    # If this schema node is an object, set additionalProperties: false
+    if schema.get("type") == "object":
+        schema.setdefault("properties", {})
+        schema["additionalProperties"] = False
+
+        # Recurse into each property
+        for prop_schema in schema.get("properties", {}).values():
+            forbid_additional_props(prop_schema)
+
+        # Recurse into patternProperties (rare but safe)
+        for prop_schema in schema.get("patternProperties", {}).values():
+            forbid_additional_props(prop_schema)
+
+    # If it's an array, recurse into "items"
+    if schema.get("type") == "array" and "items" in schema:
+        forbid_additional_props(schema["items"])
+
+    # oneOf/anyOf/allOf branches
+    for key in ("oneOf", "anyOf", "allOf"):
+        if key in schema and isinstance(schema[key], list):
+            for s in schema[key]:
+                forbid_additional_props(s)
+
+    return schema
+
+
+def generate_single_label_batch(labels, quotes) -> BytesIO | None:
     """
-    Create a JSON schema for text classification responses.
-    
-    This schema enforces that OpenAI responses contain exactly the expected
-    structure: a list of classifications with quote, label, and confidence.
-    
-    Args:
-        allowed_labels: List of valid classification labels
-        
-    Returns:
-        JSON schema dictionary that validates classification responses
+    Create a JSONL batch as bytes, in memory (no disk writes).
+    Returns a BytesIO whose .name is set to 'batchinput.jsonl'.
     """
-    item_schema = {
-        "type": "object",
-        "properties": {
-            "quote": {"type": "string", "minLength": 1},
-            "label": {"type": "string", "enum": allowed_labels},
-            "confidence": {"type": "number", "minimum": 0, "maximum": 1}
-        },
-        "required": ["quote", "label", "confidence"],
-        "additionalProperties": False
-    }
+    labels_enum = make_str_enum("Label", labels)
 
-    return {
-        "type": "object",
-        "properties": {
-            "classifications": {
-                "type": "array",
-                "items": item_schema,
-                "minItems": 1
-            }
-        },
-        "required": ["classifications"],
-        "additionalProperties": False
-    }
+    class LabeledQuote(BaseModel):
+        id: int | None = None
+        quote: str
+        label: labels_enum  # STRICT: must be one of labels
+        confidence: float = Field(..., ge=0, le=1)
+        model_config = ConfigDict(use_enum_values=True, extra='forbid')
 
+    SCHEMA = LabeledQuote.model_json_schema()
+    STRICT_SCHEMA = forbid_additional_props(SCHEMA)
 
-def _normalize_str_list(items: Iterable[str]) -> List[str]:
-    """
-    Clean and filter a list of strings, removing empty/whitespace-only items.
-    
-    Args:
-        items: Iterable of string-like items
-        
-    Returns:
-        List of non-empty, stripped strings
-    """
-    return [str(x).strip() for x in items if str(x).strip()]
-
-
-def generate_batch_jsonl_bytes(
-    labels: Sequence[str],
-    quotes: Sequence[str],
-    *,
-    custom_id_prefix: str = "quote",
-) -> io.BytesIO:
-    """
-    Create a JSONL batch file for OpenAI batch processing API.
-    
-    This function generates a properly formatted JSONL file in memory that can
-    be uploaded to OpenAI's batch processing API. Each line represents one
-    text classification request with structured JSON schema validation.
-    
-    Args:
-        labels: Sequence of allowed classification labels
-        quotes: Sequence of text snippets to classify
-        custom_id_prefix: Prefix for custom IDs in the batch (default: "quote")
-        
-    Returns:
-        BytesIO buffer containing the JSONL batch file data
-        
-    Raises:
-        ValueError: If labels or quotes are empty after normalization
-        
-    Note:
-        The returned BytesIO has its .name set to 'batchinput.jsonl' for API compatibility.
-    """
-    # Normalize and validate inputs
-    labels = [str(x).strip() for x in labels if str(x).strip()]
-    quotes = [str(x).strip() for x in quotes if str(x).strip()]
-    if not labels:
-        raise ValueError("labels is empty after normalization.")
-    if not quotes:
-        raise ValueError("quotes is empty after normalization.")
-
-    schema = build_schema(list(labels))
-
-    # Create in-memory JSONL file
     buf = io.BytesIO()
     # Give the buffer a filename so the API knows its type
     buf.name = "batchinput.jsonl"
 
-    # Generate one JSONL line per quote
-    for i, quote in enumerate(quotes, start=1):
-        prompt = (
-            "Classify the text into exactly one of the allowed labels. Return JSON only."
-            f"Allowed labels: {list(labels)}\n\n"
-            f'Text for classification: "{quote}"'
-        )
-        
-        # OpenAI batch API request format
-        line = {
-            "custom_id": f"{custom_id_prefix}-{i:05d}",
+    lines = []
+    for i, q in enumerate(quotes, 1):
+        lines.append({
+            "custom_id": f"quote-{i:05d}",
             "method": "POST",
             "url": "/v1/responses",
             "body": {
-                "model": config.model,
+                "model": model,
                 "input": [
-                    {
-                        "role": "system",
-                        "content": "You are a strict text classifier. Respond ONLY with JSON that matches the provided schema."
-                    },
-                    {"role": "user", "content": prompt},
+                    {"role": "user",
+                     "content": f"Label this quote with exactly one label from the allowed set.\nQuote: {q}"}
                 ],
                 "text": {
                     "format": {
                         "type": "json_schema",
-                        "name": "QuoteClassification",
-                        "schema": schema,
+                        "name": "LabeledQuote",
+                        "schema": STRICT_SCHEMA,
                         "strict": True
                     }
                 },
-            },
-        }
+                "metadata": {"quote": q}
+            }
+        })
+
+    for line in lines:
         buf.write((json.dumps(line, ensure_ascii=False) + "\n").encode("utf-8"))
-    
+
+    buf.seek(0)
+    return buf
+
+
+def generate_multi_label_batch(labels, quotes) -> BytesIO | None:
+    """
+    Create a JSONL batch as bytes, in memory (no disk writes).
+    Returns a BytesIO whose .name is set to 'batchinput.jsonl'.
+    """
+    labels_enum = make_str_enum("Label", labels)
+
+    class LabeledQuoteMulti(BaseModel):
+        id: int | None = None
+        quote: str
+        label: List[labels_enum] = Field(..., min_items=1)
+        confidence: float = Field(..., ge=0, le=1)
+        model_config = ConfigDict(use_enum_values=True, extra='forbid')
+
+    SCHEMA = LabeledQuoteMulti.model_json_schema()
+    STRICT_SCHEMA = forbid_additional_props(SCHEMA)
+
+    buf = io.BytesIO()
+    # Give the buffer a filename so the API knows its type
+    buf.name = "batchinput.jsonl"
+
+    lines = []
+    for i, q in enumerate(quotes, 1):
+        lines.append({
+            "custom_id": f"quote-{i:05d}",
+            "method": "POST",
+            "url": "/v1/responses",
+            "body": {
+                "model": model,
+                "input": [
+                    {"role": "user",
+                     "content": "Label this quote with labels from the allowed set only."
+                            f"Allowed: {', '.join(labels)}\nQuote: {q}"}
+                ],
+                "text": {
+                    "format": {
+                        "type": "json_schema",
+                        "name": "LabeledQuoteMulti",
+                        "schema": STRICT_SCHEMA,
+                        "strict": True
+                    }
+                },
+                "metadata": {"quote": q}
+            }
+        })
+
+    for line in lines:
+        buf.write((json.dumps(line, ensure_ascii=False) + "\n").encode("utf-8"))
+
     buf.seek(0)
     return buf
