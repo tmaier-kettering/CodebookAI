@@ -32,7 +32,7 @@ def handle_batch_fail(client, status):
         title="Save full error jsonl",
         defaultextension=".jsonl",
         filetypes=[("JSONL files", "*.jsonl"), ("All files", "*.*")],
-        initialfile="errors.csv",
+        initialfile="errors.jsonl",
     )
 
     if file_path:  # Only save if user didn't cancel
