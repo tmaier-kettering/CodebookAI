@@ -1,4 +1,4 @@
-# Batch Methods
+# Live Methods
 
 ## Tools
 
