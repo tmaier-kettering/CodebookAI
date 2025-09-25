@@ -25,7 +25,7 @@ def make_tab_with_tree(parent_frame: ttk.Frame) -> tuple[ttk.Frame, ttk.Treeview
     tab_inner = ttk.Frame(parent_frame)
     tab_inner.columnconfigure(0, weight=1)
 
-    columns = ("id", "status", "created_at", "model", "nicknames(s)")
+    columns = ("id", "status", "created_at", "model", "type", "nicknames(s)")
     tree = ttk.Treeview(tab_inner, columns=columns, show="headings", height=TABLE_HEIGHT_ROWS)
     for c in columns:
         tree.heading(c, text=c)

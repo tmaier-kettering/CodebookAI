@@ -24,7 +24,7 @@ except ImportError:
     from ui.ui_utils import populate_treeview
 
 
-def call_batch_async(parent: tk.Tk) -> None:
+def call_batch_async(parent: tk.Tk, type) -> None:
     """
     Start a new batch processing job on a background thread.
 
@@ -35,11 +35,11 @@ def call_batch_async(parent: tk.Tk) -> None:
         parent: Parent Tkinter window for error dialog ownership
     """
     def _worker():
-        try:
-            result = batch_method.send_batch(parent)
-            parent.after(0, lambda: print("batch_method finished:", result))
-        except Exception as error:
-            parent.after(0, lambda: messagebox.showerror("Batch Error", str(error)))
+        # try:
+            result = batch_method.send_batch(parent, type)
+            # parent.after(0, lambda: print("batch_method finished:", result))
+        # except Exception as error:
+            # parent.after(0, lambda: messagebox.showerror("Batch Error", str(error)))
     threading.Thread(target=_worker, daemon=True).start()
 
 
@@ -75,7 +75,7 @@ def refresh_batches_async(parent: tk.Tk) -> None:
             ongoing_batches, done_batches = list_batches()
 
             def _update_ui():
-                cols = ("id", "status", "created_at", "model", "nicknames(s)")
+                cols = ("id", "status", "created_at", "model", "type", "nicknames(s)")
                 populate_treeview(parent.tree_ongoing, cols, ongoing_batches)
                 populate_treeview(parent.tree_done, cols, done_batches)
 

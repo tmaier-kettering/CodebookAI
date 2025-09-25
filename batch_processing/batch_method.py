@@ -7,13 +7,14 @@ text classification requests efficiently using OpenAI's batch API.
 """
 
 import json
-from tkinter import filedialog, messagebox
+from tkinter import filedialog
+
 import pandas as pd
 from batch_processing.batch_error_handling import handle_batch_fail
 from file_handling.data_import import import_data
 from settings import config, secrets_store
 from openai import OpenAI
-from file_handling.json_handling import generate_batch_jsonl_bytes
+from batch_processing.batch_creation import generate_single_label_batch, generate_multi_label_batch
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Any
@@ -32,7 +33,7 @@ def get_client() -> OpenAI:
     return OpenAI(api_key=secrets_store.load_api_key())
 
 
-def send_batch(root: Any) -> Any:
+def send_batch(root: Any, type: str) -> Any:
     """
     Create and submit a new batch processing job to OpenAI.
 
@@ -63,9 +64,11 @@ def send_batch(root: Any) -> Any:
         return  # user hit Cancel
     quotes, quotes_nickname = from_import
 
-
     # Generate the JSONL batch file in memory
-    batch_bytes = generate_batch_jsonl_bytes(labels, quotes)
+    if type == "single_label":
+        batch_bytes = generate_single_label_batch(labels, quotes)
+    elif type == "multi_label":
+        batch_bytes = generate_multi_label_batch(labels, quotes)
 
     # Upload the batch file to OpenAI
     batch_input_file = client.files.create(
@@ -82,7 +85,8 @@ def send_batch(root: Any) -> Any:
         completion_window="24h",
         metadata={
             "model": config.model,
-            "nicknames(s)": (labels_nickname, quotes_nickname),
+            "type": type,
+            "nicknames(s)": ",".join(map(str,(labels_nickname, quotes_nickname)))
         }
     )
 
@@ -140,11 +144,15 @@ def get_batch_results(batch_id: str) -> None:
     # Extract classification results from the API responses
     responses = []
     for res in results:
-        response = json.loads(res['response']['body']['output'][1]['content'][0]['text'])
-        responses.append(response["classifications"][0])
+        text_output = res['response']['body']['output'][0]['content'][0]['text']
+        text_output_converted = json.loads(text_output)
+        metadata = res['response']['body']['metadata']
+        combined = {**metadata, **text_output_converted}  # Merge dictionaries
+        responses.append(combined)
 
-    # Convert to DataFrame for easy CSV export
-    output = pd.DataFrame(responses)
+    # Convert to DataFrame
+    df = pd.DataFrame(responses)
+    output = df.explode("label", ignore_index=True)
 
     # Prompt user to save the results
     file_path = filedialog.asksaveasfilename(
@@ -207,6 +215,7 @@ def list_batches():
             batch.status,
             created_time,
             md.get("model", ""),
+            md.get("type", ""),
             md.get("nicknames(s)", "")
         )
 

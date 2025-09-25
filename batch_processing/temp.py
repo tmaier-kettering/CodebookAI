@@ -1,0 +1,3 @@
+from batch_processing.batch_method import get_batch_results
+
+get_batch_results("batch_68d47cbba3348190aeab27c9b582779f")
