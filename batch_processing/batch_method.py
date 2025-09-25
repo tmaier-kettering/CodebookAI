@@ -7,15 +7,13 @@ text classification requests efficiently using OpenAI's batch API.
 """
 
 import json
-from tkinter import filedialog
-
-import pandas as pd
 from batch_processing.batch_error_handling import handle_batch_fail
 from file_handling.data_conversion import to_long_df, save_as_csv
 from file_handling.data_import import import_data
 from settings import config, secrets_store
 from openai import OpenAI
-from batch_processing.batch_creation import generate_single_label_batch, generate_multi_label_batch
+from batch_processing.batch_creation import generate_single_label_batch, generate_multi_label_batch, \
+    generate_keyword_extraction_batch
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Any
@@ -39,7 +37,7 @@ def send_batch(root: Any, type: str) -> Any:
     Create and submit a new batch processing job to OpenAI.
 
     This function prompts the user to select CSV files containing labels and
-    quotes, generates a properly formatted batch request, and submits it to
+    text, generates a properly formatted batch request, and submits it to
     OpenAI's batch processing API.
 
     Args:
@@ -52,7 +50,7 @@ def send_batch(root: Any, type: str) -> Any:
         Exception: If file selection is cancelled, files are invalid, or API call fails
     """
     client = get_client()
-
+    datasets = ()
     # Generate the JSONL batch file in memory
     if type == "single_label":
         # Get labels data
@@ -61,13 +59,15 @@ def send_batch(root: Any, type: str) -> Any:
             return  # user hit Cancel
         labels, labels_nickname = from_import
 
-        # Get quotes data
-        from_import = import_data(root, "Select the quotes data")
+        # Get text data
+        from_import = import_data(root, "Select the text data")
         if from_import is None:
             return  # user hit Cancel
-        quotes, quotes_nickname = from_import
+        text, quotes_nickname = from_import
 
-        batch_bytes = generate_single_label_batch(labels, quotes)
+        batch_bytes = generate_single_label_batch(labels, text)
+        datasets = (labels_nickname, quotes_nickname)
+
     elif type == "multi_label":
         # Get labels data
         from_import = import_data(root, "Select the labels data")
@@ -75,22 +75,26 @@ def send_batch(root: Any, type: str) -> Any:
             return  # user hit Cancel
         labels, labels_nickname = from_import
 
-        # Get quotes data
-        from_import = import_data(root, "Select the quotes data")
+        # Get text data
+        from_import = import_data(root, "Select the text data")
         if from_import is None:
             return  # user hit Cancel
-        quotes, quotes_nickname = from_import
+        text, quotes_nickname = from_import
 
-        batch_bytes = generate_multi_label_batch(labels, quotes)
+        datasets = (labels_nickname, quotes_nickname)
+        batch_bytes = generate_multi_label_batch(labels, text)
 
     elif type == "keyword_extraction":
-        # Get labels data
+        # Get text data
         from_import = import_data(root, "Select the text data")
         if from_import is None:
             return  # user hit Cancel
         text, text_nickname = from_import
 
-        batch_bytes = generate_multi_label_batch(text)
+        datasets = (text_nickname)
+        batch_bytes = generate_keyword_extraction_batch(text)
+    else:
+        raise ValueError(f"Unknown batch type: {type}")
 
     # Upload the batch file to OpenAI
     batch_input_file = client.files.create(
@@ -108,7 +112,7 @@ def send_batch(root: Any, type: str) -> Any:
         metadata={
             "model": config.model,
             "type": type,
-            "nicknames(s)": ",".join(map(str,(labels_nickname, quotes_nickname)))
+            "dataset(s)": ",".join(map(str,datasets))
         }
     )
 
@@ -229,7 +233,7 @@ def list_batches():
             created_time,
             md.get("model", ""),
             md.get("type", ""),
-            md.get("nicknames(s)", "")
+            md.get("dataset(s)", "")
         )
 
         if batch.status in ongoing_statuses:

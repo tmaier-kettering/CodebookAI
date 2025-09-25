@@ -35,11 +35,12 @@ def call_batch_async(parent: tk.Tk, type) -> None:
         parent: Parent Tkinter window for error dialog ownership
     """
     def _worker():
-        # try:
+        try:
             result = batch_method.send_batch(parent, type)
-            # parent.after(0, lambda: print("batch_method finished:", result))
-        # except Exception as error:
-            # parent.after(0, lambda: messagebox.showerror("Batch Error", str(error)))
+            refresh_batches_async(parent)
+            parent.after(0, lambda: print("batch_method finished:", result))
+        except Exception as error:
+            parent.after(0, lambda: messagebox.showerror("Batch Error", str(error)))
     threading.Thread(target=_worker, daemon=True).start()
 
 
@@ -75,7 +76,7 @@ def refresh_batches_async(parent: tk.Tk) -> None:
             ongoing_batches, done_batches = list_batches()
 
             def _update_ui():
-                cols = ("id", "status", "created_at", "model", "type", "nicknames(s)")
+                cols = ("id", "status", "created_at", "model", "type", "dataset(s)")
                 populate_treeview(parent.tree_ongoing, cols, ongoing_batches)
                 populate_treeview(parent.tree_done, cols, done_batches)
 

@@ -161,6 +161,10 @@ def build_ui(root: tk.Tk) -> None:
         label="Multi-Label Text Classification",
         command=lambda: call_batch_async(root, type="multi_label"),
     )
+    batch_methods_menu.add_command(
+        label="Keyword Extraction",
+        command=lambda: call_batch_async(root, type="keyword_extraction"),
+    )
 
     llm_tools_menu.add_cascade(label="Live Methods", menu=live_methods_menu)
     llm_tools_menu.add_cascade(label="Batch Methods", menu=batch_methods_menu)
