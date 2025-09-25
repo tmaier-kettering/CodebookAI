@@ -104,7 +104,6 @@ When you launch CodebookAI for the first time:
 2. **Check the main window** - you should see:
    - CodebookAI title and subtitle
    - Menu bar with File, Data Prep, LLM Tools, Data Analysis, and Help
-   - Clean, modern interface
 
 3. **Test API Connection**:
    - Go to **File > Settings**
