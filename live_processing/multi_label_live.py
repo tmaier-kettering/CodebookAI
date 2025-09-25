@@ -48,7 +48,6 @@ def multi_label_pipeline(parent: Optional[tk.Misc] = None):
         id: int | None = None
         quote: str
         label: List[labels] = Field(..., min_items=1)
-        confidence: float = Field(..., ge=0, le=1)
         model_config = ConfigDict(use_enum_values=True, extra='forbid')
 
     total = len(quotes)

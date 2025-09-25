@@ -48,7 +48,6 @@ def single_label_pipeline(parent: Optional[tk.Misc] = None):
         id: int | None = None
         quote: str
         label: labels  # STRICT: must be one of labels
-        confidence: float = Field(..., ge=0, le=1)
         model_config = ConfigDict(use_enum_values=True, extra='forbid')
 
 

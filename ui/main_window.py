@@ -68,8 +68,11 @@ APP_SUBTITLE = "A qualitative research tool based on OpenAI's Playground API."
 WINDOW_SIZE = (1000, 620)  # width, height
 
 
-def _open_github_repo():
-    webbrowser.open("https://github.com/tmaier-kettering/CodebookAI")
+def _open_help_docs():
+    webbrowser.open("https://github.com/tmaier-kettering/CodebookAI?tab=readme-ov-file#readme")
+
+def _open_report_bug():
+    webbrowser.open("https://github.com/tmaier-kettering/CodebookAI/issues/new")
 
 
 def build_ui(root: tk.Tk) -> None:
@@ -146,7 +149,7 @@ def build_ui(root: tk.Tk) -> None:
     live_methods_menu.add_command(
         label="Multi-Label Text Classification", command=_multi_label_live_call
     )
-    live_methods_menu.add_command(label="Text Extraction", command=_keyword_extraction_live_call)
+    live_methods_menu.add_command(label="Keyword Extraction", command=_keyword_extraction_live_call)
 
     # Batch Methods submenu
     batch_methods_menu = tk.Menu(llm_tools_menu, tearoff=False)
@@ -171,7 +174,8 @@ def build_ui(root: tk.Tk) -> None:
 
     # Help
     help_menu = tk.Menu(menubar, tearoff=False)
-    help_menu.add_command(label="Github Repo", command=_open_github_repo)
+    help_menu.add_command(label="Help Docs", command=_open_help_docs)
+    help_menu.add_command(label="Report a bug", command=_open_report_bug)
     menubar.add_cascade(label="Help", menu=help_menu)
 
     root.config(menu=menubar)

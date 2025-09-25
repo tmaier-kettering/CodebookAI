@@ -28,6 +28,7 @@ def save_as_csv(df: "pd.DataFrame"):
     else:
         messagebox.showinfo("Cancelled", "Save operation cancelled.")
 
+
 def to_long_df(records):
     """
     records: iterable of objects with .model_dump() -> dict
@@ -36,7 +37,10 @@ def to_long_df(records):
     - Explodes ALL list-like columns (lists/tuples/sets).
     """
     # 1) Collect dicts (model_dump) and flatten nested dicts
-    raw = [r.model_dump() for r in records]
+    try:
+        raw = [r.model_dump() for r in records]
+    except Exception:
+        raw = records # assume already dicts
     df = pd.json_normalize(raw, sep='.')  # flattens nested dicts into columns like 'meta.author'
 
     # 2) Detect list-like columns (skip strings/bytes)

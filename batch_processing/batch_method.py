@@ -11,6 +11,7 @@ from tkinter import filedialog
 
 import pandas as pd
 from batch_processing.batch_error_handling import handle_batch_fail
+from file_handling.data_conversion import to_long_df, save_as_csv
 from file_handling.data_import import import_data
 from settings import config, secrets_store
 from openai import OpenAI
@@ -52,23 +53,44 @@ def send_batch(root: Any, type: str) -> Any:
     """
     client = get_client()
 
-    # Get labels data
-    from_import = import_data(root, "Select the labels data")
-    if from_import is None:
-        return  # user hit Cancel
-    labels, labels_nickname = from_import
-
-    # Get quotes data
-    from_import = import_data(root, "Select the quotes data")
-    if from_import is None:
-        return  # user hit Cancel
-    quotes, quotes_nickname = from_import
-
     # Generate the JSONL batch file in memory
     if type == "single_label":
+        # Get labels data
+        from_import = import_data(root, "Select the labels data")
+        if from_import is None:
+            return  # user hit Cancel
+        labels, labels_nickname = from_import
+
+        # Get quotes data
+        from_import = import_data(root, "Select the quotes data")
+        if from_import is None:
+            return  # user hit Cancel
+        quotes, quotes_nickname = from_import
+
         batch_bytes = generate_single_label_batch(labels, quotes)
     elif type == "multi_label":
+        # Get labels data
+        from_import = import_data(root, "Select the labels data")
+        if from_import is None:
+            return  # user hit Cancel
+        labels, labels_nickname = from_import
+
+        # Get quotes data
+        from_import = import_data(root, "Select the quotes data")
+        if from_import is None:
+            return  # user hit Cancel
+        quotes, quotes_nickname = from_import
+
         batch_bytes = generate_multi_label_batch(labels, quotes)
+
+    elif type == "keyword_extraction":
+        # Get labels data
+        from_import = import_data(root, "Select the text data")
+        if from_import is None:
+            return  # user hit Cancel
+        text, text_nickname = from_import
+
+        batch_bytes = generate_multi_label_batch(text)
 
     # Upload the batch file to OpenAI
     batch_input_file = client.files.create(
@@ -151,19 +173,10 @@ def get_batch_results(batch_id: str) -> None:
         responses.append(combined)
 
     # Convert to DataFrame
-    df = pd.DataFrame(responses)
-    output = df.explode("label", ignore_index=True)
-
-    # Prompt user to save the results
-    file_path = filedialog.asksaveasfilename(
-        title="Save classifications as CSV",
-        defaultextension=".csv",
-        filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
-        initialfile="classifications.csv",
-    )
-
-    if file_path:  # Only save if user didn't cancel
-        output.to_csv(file_path, index=False)
+    # df = pd.DataFrame(responses)
+    # output = df.explode("label", ignore_index=True)
+    df = to_long_df(responses)
+    save_as_csv(df)
 
 
 def cancel_batch(batch_id: str) -> Any:

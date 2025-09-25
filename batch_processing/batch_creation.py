@@ -147,3 +147,49 @@ def generate_multi_label_batch(labels, quotes) -> BytesIO | None:
 
     buf.seek(0)
     return buf
+
+
+def generate_keyword_extraction_batch(texts) -> BytesIO | None:
+    """
+    Create a JSONL batch as bytes, in memory (no disk writes).
+    Returns a BytesIO whose .name is set to 'batchinput.jsonl'.
+    """
+    class KeywordExtraction(BaseModel):
+        keywords: list[str] = Field(..., min_items=1)
+        model_config = ConfigDict(extra='forbid')
+
+    SCHEMA = KeywordExtraction.model_json_schema()
+    STRICT_SCHEMA = forbid_additional_props(SCHEMA)
+
+    buf = io.BytesIO()
+    # Give the buffer a filename so the API knows its type
+    buf.name = "batchinput.jsonl"
+
+    lines = []
+    for i, txt in enumerate(texts, 1):
+        lines.append({
+            "custom_id": f"text-{i:05d}",
+            "method": "POST",
+            "url": "/v1/responses",
+            "body": {
+                "model": model,
+                "input": [{"role": "system", "content": "You are an expert at structured data extraction."},
+                    {"role": "user", "content": f"Extract the keywords from this text: {txt}"}
+                ],
+                "text": {
+                    "format": {
+                        "type": "json_schema",
+                        "name": "KeywordExtraction",
+                        "schema": STRICT_SCHEMA,
+                        "strict": True
+                    }
+                },
+                "metadata": {"quote": txt}
+            }
+        })
+
+    for line in lines:
+        buf.write((json.dumps(line, ensure_ascii=False) + "\n").encode("utf-8"))
+
+    buf.seek(0)
+    return buf
