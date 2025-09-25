@@ -6,6 +6,7 @@ openai>=1.100.0          # OpenAI API client for text classification
 pandas>=2.0.0            # Data manipulation and analysis
 pydantic>=2.0.0          # Data validation and settings management
 openpyxl>=3.1.0          # Excel file reading/writing support
+matplotlib>=3.7.0        # Data visualization
 
 # System integration
 keyring>=25.0.0          # Secure credential storage across platforms
