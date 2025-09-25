@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Sequence, Iterable
 from enum import Enum
 from tkinter import filedialog, messagebox
 
@@ -61,3 +61,13 @@ def to_long_df(records):
         df = df.dropna(subset=list_cols, how='any')
 
     return df
+
+
+def join_datasets(datasets):
+    if datasets is None:
+        return ""
+    if isinstance(datasets, (str, bytes)):
+        return datasets
+    if isinstance(datasets, Iterable):
+        return ",".join(map(str, datasets))
+    return str(datasets)

@@ -107,7 +107,7 @@ class DatasetNameSelector(ttk.Frame):
         self.file_based_name = tk.StringVar(value="")
         self.custom_name = tk.StringVar(value="")
 
-        ttk.Label(self, text="Dataset name").pack(anchor="w")
+        ttk.Label(self, text="Dataset Name").pack(anchor="w")
 
         # Radio: Use file name
         row1 = ttk.Frame(self)

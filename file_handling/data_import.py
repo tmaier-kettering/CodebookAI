@@ -1,13 +1,13 @@
 """
-Universal tabular import with a small 'Import Wizard' UI + nickname selector.
+Universal tabular import with a small 'Import Wizard' UI + dataset name selector.
 
 Changes in this version:
 - Keeps CSV/TSV/TXT/Excel support and the scrollable preview with column radio-select.
-- Adds a "Nickname" section under the table with three radio options:
+- Adds a "Dataset Name" section under the table with three radio options:
     1) File name (stem)
     2) Selected column header (enabled only if "File has headers" is checked)
     3) Other (free text entry)
-- On Import, returns (values_from_selected_column, selected_nickname).
+- On Import, returns (values_from_selected_column, selected_dataset_name).
 
 Public API:
     import_csv(parent: Optional[tk.Misc]=None, title="Import Data") -> Optional[tuple[list[str], str]]
@@ -198,11 +198,11 @@ def import_data(
 ) -> Optional[tuple[list[str], str]]:
     """
     Open an "Import Wizard" dialog: select a file, preview it, choose 'has headers',
-    pick exactly one column via radio buttons, choose a nickname, and return that
-    column's values and the chosen nickname.
+    pick exactly one column via radio buttons, choose a dataset name, and return that
+    column's values and the chosen dataset name.
 
     Returns:
-        (values_from_selected_column, selected_nickname) or None if cancelled.
+        (values_from_selected_column, selected_dataset_name) or None if cancelled.
     """
 
     # ---------------- Setup window ----------------
@@ -272,28 +272,28 @@ def import_data(
     tree.configure(yscrollcommand=vscroll.set, xscrollcommand=hscroll.set)
     hscroll.configure(command=tree.xview)
 
-    # ---------------- Nickname controls ----------------
+    # ---------------- Dataset Name controls ----------------
     # Options: 0 = filename, 1 = selected column header, 2 = other (entry)
-    nickname_mode = tk.IntVar(master=dlg, value=0)
-    nickname_other = tk.StringVar(master=dlg, value="")
-    nickname_preview = tk.StringVar(master=dlg, value="")
+    dataset_name_mode = tk.IntVar(master=dlg, value=0)
+    dataset_name_other = tk.StringVar(master=dlg, value="")
+    dataset_name_preview = tk.StringVar(master=dlg, value="")
 
-    nick_frame = ttk.LabelFrame(dlg, text="Nickname")
+    nick_frame = ttk.LabelFrame(dlg, text="Dataset Name")
     nick_frame.grid(row=8, column=0, columnspan=3, sticky="we", padx=10, pady=(0, 10))
     for col in range(3):
         nick_frame.columnconfigure(col, weight=1)
 
-    r_file = ttk.Radiobutton(nick_frame, text="Use file name", value=0, variable=nickname_mode)
-    r_colh = ttk.Radiobutton(nick_frame, text="Use selected column header", value=1, variable=nickname_mode)
-    r_other = ttk.Radiobutton(nick_frame, text="Other:", value=2, variable=nickname_mode)
+    r_file = ttk.Radiobutton(nick_frame, text="Use file name", value=0, variable=dataset_name_mode)
+    r_colh = ttk.Radiobutton(nick_frame, text="Use selected column header", value=1, variable=dataset_name_mode)
+    r_other = ttk.Radiobutton(nick_frame, text="Other:", value=2, variable=dataset_name_mode)
     r_file.grid(row=0, column=0, sticky="w", padx=8, pady=6)
     r_colh.grid(row=0, column=1, sticky="w", padx=8, pady=6)
     r_other.grid(row=0, column=2, sticky="w", padx=8, pady=6)
 
-    other_entry = ttk.Entry(nick_frame, textvariable=nickname_other, width=30, state="disabled")
+    other_entry = ttk.Entry(nick_frame, textvariable=dataset_name_other, width=30, state="disabled")
     other_entry.grid(row=1, column=2, sticky="w", padx=30, pady=(0, 8))
 
-    ttk.Label(nick_frame, textvariable=nickname_preview, foreground="#555").grid(
+    ttk.Label(nick_frame, textvariable=dataset_name_preview, foreground="#555").grid(
         row=1, column=0, columnspan=2, sticky="w", padx=8, pady=(0, 8)
     )
 
@@ -326,7 +326,7 @@ def import_data(
     def _initial_blank_preview():
         _set_preview_columns([f"Column {i+1}" for i in range(5)])
         _fill_preview_rows([[""] * 5 for _ in range(5)])
-        _update_nickname_preview()
+        _update_dataset_name_preview()
 
     def _current_header_labels() -> list[str]:
         # Return the labels currently shown atop the preview
@@ -339,27 +339,27 @@ def import_data(
             return str(labels[idx])
         return ""
 
-    def _update_nickname_controls_enabled():
+    def _update_dataset_name_controls_enabled():
         # Enable/disable "selected column header" radio based on has_headers + data present
         has_data = bool(_loaded_rows)
         enable_col_header = has_headers.get() and has_data and len(tree["columns"]) > 0
         state = "normal" if enable_col_header else "disabled"
         r_colh.configure(state=state)
-        if state == "disabled" and nickname_mode.get() == 1:
-            nickname_mode.set(0)  # fall back to filename
+        if state == "disabled" and dataset_name_mode.get() == 1:
+            dataset_name_mode.set(0)  # fall back to filename
         # Enable/disable custom entry
-        other_state = "normal" if nickname_mode.get() == 2 else "disabled"
+        other_state = "normal" if dataset_name_mode.get() == 2 else "disabled"
         other_entry.configure(state=other_state)
 
-    def _update_nickname_preview(*_args):
-        choice = nickname_mode.get()
+    def _update_dataset_name_preview(*_args):
+        choice = dataset_name_mode.get()
         if choice == 0:
-            nickname_preview.set(f"Nickname → {(_filename_stem or '—')}")
+            dataset_name_preview.set(f"Dataset Name → {(_filename_stem or '—')}")
         elif choice == 1:
-            nickname_preview.set(f"Nickname → {(_selected_header_label() or '—')}")
+            dataset_name_preview.set(f"Dataset Name → {(_selected_header_label() or '—')}")
         else:
-            nickname_preview.set(f"Nickname → {(nickname_other.get().strip() or '—')}")
-        _update_nickname_controls_enabled()
+            dataset_name_preview.set(f"Dataset Name → {(dataset_name_other.get().strip() or '—')}")
+        _update_dataset_name_controls_enabled()
 
     def _selected_header_label() -> str:
         return _selected_header_label_cached()
@@ -407,8 +407,8 @@ def import_data(
             return ""
         _selected_header_label_cached = _sel_hdr
 
-        # Reset nickname preview (filename by default)
-        _update_nickname_preview()
+        # Reset dataset_name preview (filename by default)
+        _update_dataset_name_preview()
 
         # Clamp selected column
         if selected_col.get() >= len(header):
@@ -418,19 +418,19 @@ def import_data(
     _selected_header_label_cached = lambda: ""
 
     # Reactivity hooks
-    selected_col.trace_add("write", _update_nickname_preview)
+    selected_col.trace_add("write", _update_dataset_name_preview)
     has_headers.trace_add("write", lambda *_: (_refresh_preview(),))
-    nickname_mode.trace_add("write", _update_nickname_preview)
-    nickname_other.trace_add("write", _update_nickname_preview)
+    dataset_name_mode.trace_add("write", _update_dataset_name_preview)
+    dataset_name_other.trace_add("write", _update_dataset_name_preview)
 
     _initial_blank_preview()  # start 5x5
 
     # -------------- Import handler --------------
     result_values: Optional[list[str]] = None
-    result_nickname: Optional[str] = None
+    result_dataset_name: Optional[str] = None
 
     def _do_import():
-        nonlocal result_values, result_nickname
+        nonlocal result_values, result_dataset_name
         path = file_var.get().strip()
         if not path:
             messagebox.showerror("Error", "No file selected.", parent=dlg)
@@ -455,26 +455,26 @@ def import_data(
             val = r[col_idx] if col_idx < len(r) else ""
             out.append("" if val is None else str(val))
 
-        # Resolve nickname
-        mode = nickname_mode.get()
+        # Resolve dataset_name
+        mode = dataset_name_mode.get()
         if mode == 0:
-            nickname = _filename_stem or "data"
+            dataset_name = _filename_stem or "data"
         elif mode == 1:
             if not has_headers.get():
-                messagebox.showerror("Nickname error", "Column header option requires headers to be enabled.", parent=dlg)
+                messagebox.showerror("Dataset Name error", "Column header option requires headers to be enabled.", parent=dlg)
                 return
-            nickname = _selected_header_label()
-            if not nickname.strip():
-                messagebox.showerror("Nickname error", "Selected column has an empty header.", parent=dlg)
+            dataset_name = _selected_header_label()
+            if not dataset_name.strip():
+                messagebox.showerror("Dataset Name error", "Selected column has an empty header.", parent=dlg)
                 return
         else:
-            nickname = nickname_other.get().strip()
-            if not nickname:
-                messagebox.showerror("Nickname error", "Please type a nickname in the 'Other' field.", parent=dlg)
+            dataset_name = dataset_name_other.get().strip()
+            if not dataset_name:
+                messagebox.showerror("Dataset Name error", "Please type a dataset_name in the 'Other' field.", parent=dlg)
                 return
 
         result_values = out
-        result_nickname = nickname
+        result_dataset_name = dataset_name
         dlg.destroy()
 
     process_btn.configure(command=_do_import)
@@ -493,6 +493,6 @@ def import_data(
     owner.wait_window(dlg)
     _safe_destroy(created_root)
 
-    if result_values is None or result_nickname is None:
+    if result_values is None or result_dataset_name is None:
         return None
-    return result_values, result_nickname
+    return result_values, result_dataset_name

@@ -50,9 +50,9 @@ def _read_table(path: str, has_header: bool) -> pd.DataFrame:
 
 def _coerce_preview(df: pd.DataFrame, has_header: bool) -> pd.DataFrame:
     """
-    Return top 5 rows for preview. If no header, ensure generic column names.
+    Return top 20 rows for preview. If no header, ensure generic column names.
     """
-    preview = df.head(5).copy()
+    preview = df.head(20).copy()
     if not has_header:
         # Assign generic names if pandas has numeric columns 0..N-1
         ncols = preview.shape[1]
@@ -120,7 +120,7 @@ class ImportSampleDialog(tk.Toplevel):
     Modal dialog:
       - Choose file
       - Header checkbox
-      - Preview (top 5 rows)
+      - Preview (top 20 rows)
       - Sampling controls (rows / percent)
       - OK / Cancel
     After OK, performs sampling and save dialog; closes when done.
@@ -192,7 +192,7 @@ class ImportSampleDialog(tk.Toplevel):
         self.entry_percent.grid(row=2, column=1, sticky="w", pady=(6,0))
 
         # Preview
-        preview_frame = ttk.LabelFrame(self, text="Preview (top 5 rows)")
+        preview_frame = ttk.LabelFrame(self, text="Preview (top 20 rows)")
         preview_frame.grid(row=2, column=0, padx=12, pady=(0, 8), sticky="nsew")
         self.rowconfigure(2, weight=1)
 
@@ -210,10 +210,11 @@ class ImportSampleDialog(tk.Toplevel):
         # Buttons
         btns = ttk.Frame(self)
         btns.grid(row=3, column=0, padx=12, pady=(0, 12), sticky="e")
-        self.btn_ok = ttk.Button(btns, text="OK", command=self._on_ok, state="disabled")
         self.btn_cancel = ttk.Button(btns, text="Cancel", command=self._on_cancel)
-        self.btn_ok.grid(row=0, column=0, padx=(0, 8))
-        self.btn_cancel.grid(row=0, column=1)
+        self.btn_cancel.grid(row=0, column=0)
+        self.btn_ok = ttk.Button(btns, text="OK", command=self._on_ok, state="disabled")
+        self.btn_ok.grid(row=0, column=1, padx=(0, 8))
+
 
         self._update_sampling_entry_state()
 

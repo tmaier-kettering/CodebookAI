@@ -8,7 +8,7 @@ text classification requests efficiently using OpenAI's batch API.
 
 import json
 from batch_processing.batch_error_handling import handle_batch_fail
-from file_handling.data_conversion import to_long_df, save_as_csv
+from file_handling.data_conversion import to_long_df, save_as_csv, join_datasets
 from file_handling.data_import import import_data
 from settings import config, secrets_store
 from openai import OpenAI
@@ -67,6 +67,7 @@ def send_batch(root: Any, type: str) -> Any:
 
         batch_bytes = generate_single_label_batch(labels, text)
         datasets = (labels_nickname, quotes_nickname)
+        joined_datasets = join_datasets(datasets)
 
     elif type == "multi_label":
         # Get labels data
@@ -82,6 +83,7 @@ def send_batch(root: Any, type: str) -> Any:
         text, quotes_nickname = from_import
 
         datasets = (labels_nickname, quotes_nickname)
+        joined_datasets = join_datasets(datasets)
         batch_bytes = generate_multi_label_batch(labels, text)
 
     elif type == "keyword_extraction":
@@ -91,7 +93,7 @@ def send_batch(root: Any, type: str) -> Any:
             return  # user hit Cancel
         text, text_nickname = from_import
 
-        datasets = (text_nickname)
+        joined_datasets = join_datasets(text_nickname)
         batch_bytes = generate_keyword_extraction_batch(text)
     else:
         raise ValueError(f"Unknown batch type: {type}")
@@ -112,7 +114,7 @@ def send_batch(root: Any, type: str) -> Any:
         metadata={
             "model": config.model,
             "type": type,
-            "dataset(s)": ",".join(map(str,datasets))
+            "dataset(s)": joined_datasets
         }
     )
 
