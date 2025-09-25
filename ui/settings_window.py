@@ -22,7 +22,7 @@ from tkinter import ttk, messagebox
 from zoneinfo import available_timezones
 
 from settings import config
-from settings.models_registry import get_models, refresh_models
+from settings.models_registry import get_models, refresh_models, refresh_client
 from settings.secrets_store import save_api_key, load_api_key, clear_api_key
 
 
@@ -216,6 +216,7 @@ class SettingsWindow(tk.Toplevel):
     def _clear_key(self):
         try:
             clear_api_key()
+            refresh_client()  # Refresh the models registry client
             self.var_api_key.set("")
             messagebox.showinfo("Settings", "API key cleared from secure storage.")
         except Exception as e:
@@ -247,6 +248,8 @@ class SettingsWindow(tk.Toplevel):
             # 1) Save secret to secure store
             if api_key:
                 save_api_key(api_key)
+                # Refresh the models registry client with the new API key
+                refresh_client()
 
             # 2) Persist non-secrets to config.py
             self._write_config_file(model, max_batches, time_zone)

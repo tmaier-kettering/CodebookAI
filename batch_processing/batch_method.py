@@ -29,7 +29,10 @@ def get_client() -> OpenAI:
     Raises:
         Exception: If API key is not configured or invalid
     """
-    return OpenAI(api_key=secrets_store.load_api_key())
+    api_key = secrets_store.load_api_key()
+    if not api_key:
+        raise Exception("OpenAI API key not configured. Please set it in Settings.")
+    return OpenAI(api_key=api_key)
 
 
 def send_batch(root: Any, type: str) -> Any:
