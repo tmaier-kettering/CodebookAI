@@ -58,10 +58,7 @@ def generate_single_label_batch(labels, quotes) -> BytesIO | None:
     labels_enum = make_str_enum("Label", labels)
 
     class LabeledQuote(BaseModel):
-        id: int | None = None
-        quote: str
         label: labels_enum  # STRICT: must be one of labels
-        confidence: float = Field(..., ge=0, le=1)
         model_config = ConfigDict(use_enum_values=True, extra='forbid')
 
     SCHEMA = LabeledQuote.model_json_schema()
@@ -110,10 +107,7 @@ def generate_multi_label_batch(labels, quotes) -> BytesIO | None:
     labels_enum = make_str_enum("Label", labels)
 
     class LabeledQuoteMulti(BaseModel):
-        id: int | None = None
-        quote: str
         label: List[labels_enum] = Field(..., min_items=1)
-        confidence: float = Field(..., ge=0, le=1)
         model_config = ConfigDict(use_enum_values=True, extra='forbid')
 
     SCHEMA = LabeledQuoteMulti.model_json_schema()
@@ -133,7 +127,7 @@ def generate_multi_label_batch(labels, quotes) -> BytesIO | None:
                 "model": model,
                 "input": [
                     {"role": "user",
-                     "content": "Label this quote with labels from the allowed set only."
+                     "content": "Label this quote with labels from the allowed set only. \n"
                             f"Allowed: {', '.join(labels)}\nQuote: {q}"}
                 ],
                 "text": {

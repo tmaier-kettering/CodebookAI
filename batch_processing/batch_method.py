@@ -7,13 +7,12 @@ text classification requests efficiently using OpenAI's batch API.
 """
 
 import json
-from tkinter import filedialog, messagebox
 import pandas as pd
 from batch_processing.batch_error_handling import handle_batch_fail
 from file_handling.data_import import import_data
 from settings import config, secrets_store
 from openai import OpenAI
-from file_handling.json_handling import generate_single_label_batch, generate_multi_label_batch
+from batch_processing.batch_creation import generate_single_label_batch, generate_multi_label_batch
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Any
@@ -143,22 +142,31 @@ def get_batch_results(batch_id: str) -> None:
     # Extract classification results from the API responses
     responses = []
     for res in results:
-        response = json.loads(res['response']['body']['output'][1]['content'][0]['text'])
-        responses.append(response["classifications"][0])
+        text_output = res['response']['body']['output'][0]['content'][0]['text']
+        text_output_converted = json.loads(text_output)
+        metadata = res['response']['body']['metadata']
+        combined = {**metadata, **text_output_converted}  # Merge dictionaries
+        responses.append(combined)
+
+    df = pd.DataFrame(responses)
+    flattened_df = df.explode("label", ignore_index=True)
+    print(flattened_df)
+    batch = get_batch_status(batch_id)
+    print(batch)
 
     # Convert to DataFrame for easy CSV export
-    output = pd.DataFrame(responses)
+    # output = pd.DataFrame(responses)
 
-    # Prompt user to save the results
-    file_path = filedialog.asksaveasfilename(
-        title="Save classifications as CSV",
-        defaultextension=".csv",
-        filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
-        initialfile="classifications.csv",
-    )
-
-    if file_path:  # Only save if user didn't cancel
-        output.to_csv(file_path, index=False)
+    # # Prompt user to save the results
+    # file_path = filedialog.asksaveasfilename(
+    #     title="Save classifications as CSV",
+    #     defaultextension=".csv",
+    #     filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+    #     initialfile="classifications.csv",
+    # )
+    #
+    # if file_path:  # Only save if user didn't cancel
+    #     output.to_csv(file_path, index=False)
 
 
 def cancel_batch(batch_id: str) -> Any:
