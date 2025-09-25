@@ -7,6 +7,8 @@ text classification requests efficiently using OpenAI's batch API.
 """
 
 import json
+from tkinter import filedialog
+
 import pandas as pd
 from batch_processing.batch_error_handling import handle_batch_fail
 from file_handling.data_import import import_data
@@ -148,25 +150,20 @@ def get_batch_results(batch_id: str) -> None:
         combined = {**metadata, **text_output_converted}  # Merge dictionaries
         responses.append(combined)
 
+    # Convert to DataFrame
     df = pd.DataFrame(responses)
-    flattened_df = df.explode("label", ignore_index=True)
-    print(flattened_df)
-    batch = get_batch_status(batch_id)
-    print(batch)
+    output = df.explode("label", ignore_index=True)
 
-    # Convert to DataFrame for easy CSV export
-    # output = pd.DataFrame(responses)
+    # Prompt user to save the results
+    file_path = filedialog.asksaveasfilename(
+        title="Save classifications as CSV",
+        defaultextension=".csv",
+        filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+        initialfile="classifications.csv",
+    )
 
-    # # Prompt user to save the results
-    # file_path = filedialog.asksaveasfilename(
-    #     title="Save classifications as CSV",
-    #     defaultextension=".csv",
-    #     filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
-    #     initialfile="classifications.csv",
-    # )
-    #
-    # if file_path:  # Only save if user didn't cancel
-    #     output.to_csv(file_path, index=False)
+    if file_path:  # Only save if user didn't cancel
+        output.to_csv(file_path, index=False)
 
 
 def cancel_batch(batch_id: str) -> Any:
