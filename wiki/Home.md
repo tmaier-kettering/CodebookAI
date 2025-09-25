@@ -1,7 +1,6 @@
 # CodebookAI Wiki
 
-Welcome to the comprehensive documentation for **CodebookAI** - a powerful qualitative research tool that leverages OpenAI's GPT models to assist researchers in processing large text datasets efficiently and cost-effectively.
-CodebookAI is designed to assist qualitative researchers in processing large datasets through OpenAI's GPT models (e.g., GPT-4o, GPT-4o-mini, o1, etc.). It provides both live and batch processing capabilities for text classification, significantly reducing the cost and time associated with manual coding while maintaining high accuracy and reliability.
+CodebookAI is designed to assist qualitative researchers in processing large datasets through OpenAI's GPT models (e.g., GPT-4o, GPT-4o-mini, o1, etc.). It provides both live and batch processing capabilities for text classification, significantly reducing the cost and time associated with manual coding.
 
 ## ✨ Key Features
 
