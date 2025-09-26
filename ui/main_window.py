@@ -17,7 +17,9 @@ Updated per request:
 - Added a "Batches" title above the table area at the bottom of the page.
 """
 
+import sys, os
 import tkinter as tk
+from pathlib import Path
 from tkinter import ttk
 import webbrowser
 
@@ -74,6 +76,11 @@ def _open_help_docs():
 def _open_report_bug():
     webbrowser.open("https://github.com/tmaier-kettering/CodebookAI/issues/new")
 
+def asset_path(*parts) -> str:
+    # When frozen by PyInstaller, data are unpacked under sys._MEIPASS
+    base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
+    return str(base.joinpath("assets", *parts))
+
 
 def build_ui(root: tk.Tk) -> None:
     """
@@ -104,9 +111,9 @@ def build_ui(root: tk.Tk) -> None:
 
     # Load and keep a reference to avoid garbage collection
     # (PNG with transparency is fine with tk.PhotoImage)
-    orig = tk.PhotoImage(file="assets/Banner_Narrow_trans.png")
-    scale_factor = 3  # make bigger number to shrink more
-    root.banner_img = orig.subsample(scale_factor, scale_factor)
+    banner_img = tk.PhotoImage(file=asset_path("Banner_Narrow_trans.png"))
+    scale_factor = 3
+    root.banner_img = banner_img.subsample(scale_factor, scale_factor)  # keep a ref on root
 
     banner_lbl = ttk.Label(header, image=root.banner_img, anchor="center")
     banner_lbl.grid(row=0, column=0, sticky="n", padx=0, pady=0)
