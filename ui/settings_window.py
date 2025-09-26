@@ -13,13 +13,11 @@ and non-sensitive configuration values stored in the config.py file.
 
 from __future__ import annotations
 
-from pathlib import Path
+import os
 import tkinter as tk
 from tkinter import ttk, messagebox
 from zoneinfo import available_timezones
-
-from settings import config
-from settings.user_config import get_setting, set_setting, get_merged_config
+from settings.user_config import get_setting, set_setting
 from settings.models_registry import get_models, refresh_models, refresh_client
 from settings.secrets_store import save_api_key, load_api_key, clear_api_key
 

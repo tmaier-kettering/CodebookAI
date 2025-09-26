@@ -97,21 +97,19 @@ def build_ui(root: tk.Tk) -> None:
     root.rowconfigure(2, weight=0)  # table area
 
     # ===== Header (title & subtitle only; no buttons) =====
-    header = ttk.Frame(root, padding=(16, 12))
+    # ===== Header (banner image) =====
+    header = ttk.Frame(root, padding=(0, 0))
     header.grid(row=0, column=0, sticky="ew")
     header.columnconfigure(0, weight=1)
 
-    title_lbl = ttk.Label(header, text=APP_TITLE, font=("Segoe UI", 24, "bold"))
-    title_lbl.grid(row=0, column=0, sticky="n", pady=(2, 0))
+    # Load and keep a reference to avoid garbage collection
+    # (PNG with transparency is fine with tk.PhotoImage)
+    orig = tk.PhotoImage(file="assets/Banner_Narrow_trans.png")
+    scale_factor = 3  # make bigger number to shrink more
+    root.banner_img = orig.subsample(scale_factor, scale_factor)
 
-    subtitle_lbl = ttk.Label(
-        header,
-        text=APP_SUBTITLE,
-        font=("Segoe UI", 12, "italic"),
-        wraplength=700,
-        justify="center",
-    )
-    subtitle_lbl.grid(row=1, column=0, sticky="n", pady=(2, 0))
+    banner_lbl = ttk.Label(header, image=root.banner_img, anchor="center")
+    banner_lbl.grid(row=0, column=0, sticky="n", padx=0, pady=0)
 
     # ===== Menu Bar =====
     menubar = tk.Menu(root)
