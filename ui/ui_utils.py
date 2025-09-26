@@ -39,7 +39,7 @@ def populate_treeview(tree: ttk.Treeview, columns: tuple[str, ...], rows: list[t
     tree["show"] = "headings"
     for col in columns:
         tree.heading(col, text=col)
-        tree.column(col, anchor="w")
+        tree.column(col, anchor="w", stretch=True, width=60, minwidth=20)
 
     # Clear existing rows
     for iid in tree.get_children():

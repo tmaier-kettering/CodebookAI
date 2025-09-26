@@ -23,6 +23,7 @@ from pathlib import Path
 from tkinter import ttk
 import webbrowser
 
+from asset_path import asset_path
 from live_processing.correlogram import open_correlogram_wizard
 from live_processing.reliability_calculator import open_reliability_wizard
 from live_processing.sampler import sample_data
@@ -76,11 +77,6 @@ def _open_help_docs():
 def _open_report_bug():
     webbrowser.open("https://github.com/tmaier-kettering/CodebookAI/issues/new")
 
-def asset_path(*parts) -> str:
-    # When frozen by PyInstaller, data are unpacked under sys._MEIPASS
-    base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
-    return str(base.joinpath("assets", *parts))
-
 
 def build_ui(root: tk.Tk) -> None:
     """
@@ -96,6 +92,7 @@ def build_ui(root: tk.Tk) -> None:
         root: The main Tkinter window to build the UI in
     """
     root.title(APP_TITLE)
+    root.iconbitmap(asset_path("app.ico"))
 
     # ===== Top-level grid: header, spacer, table area =====
     root.columnconfigure(0, weight=1)
