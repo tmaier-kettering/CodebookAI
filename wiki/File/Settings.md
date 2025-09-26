@@ -11,6 +11,22 @@
 
 ---
 
+## 💾 Settings Storage
+
+### User Settings Location
+User-configurable settings are stored in platform-appropriate directories:
+- **Windows**: `%APPDATA%\CodebookAI\config.json`
+- **macOS**: `~/Library/Application Support/CodebookAI/config.json`
+- **Linux**: `~/.config/CodebookAI/config.json`
+
+### Configuration System
+- **Application Defaults**: Read from `settings/config.py` (read-only)
+- **User Overrides**: Stored in user-specific JSON configuration file
+- **Merged Configuration**: User settings override defaults at runtime
+- **Bundled Application Safe**: Works correctly in PyInstaller and other bundled environments
+
+---
+
 ## 🔑 API Key Configuration
 
 ### Setting Your API Key
