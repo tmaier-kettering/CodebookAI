@@ -1,3 +1,9 @@
+<p align="center">
+
+![CodebookAI Logo](./assets/BannerRoundedEdgesSmall.png)
+
+</p>
+
 # CodebookAI
 
 CodebookAI is a tool designed to assist qualitative researchers process large datasets through OpenAI's GPT models (e.g., 4o, 5, o3, etc.). It enables batch processing of text snippets against a set of labels, significantly reducing the cost and time associated with manual coding, as well as a variety of other tools aimed at qualitative data preparation and analysis. 
@@ -19,6 +25,7 @@ CodebookAI is a tool designed to assist qualitative researchers process large da
 - [LLM Tools](./wiki/LLMTools/LLMTools.md)
 - [Data Analysis](./wiki/DataAnalysis/DataAnalysis.md)
 - [Help](./wiki/Help/Help.md)
+- [Example](./wiki/Example.md)
 
 ---
 
@@ -27,6 +34,7 @@ CodebookAI is a tool designed to assist qualitative researchers process large da
 This project is provided as-is for educational and research purposes. Please ensure compliance with OpenAI's usage policies when using this application.
 
 ## How to Support
+
 [![BuyMeACoffee](./assets/buymeacoffee.png)](https://buymeacoffee.com/professthor)
 
 If you find this tool helpful, consider supporting its development by [buying me a coffee](https://buymeacoffee.com/professthor)! 
