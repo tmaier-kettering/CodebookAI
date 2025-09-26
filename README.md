@@ -4,8 +4,6 @@
 
 </p>
 
-# CodebookAI
-
 CodebookAI is a tool designed to assist qualitative researchers process large datasets through OpenAI's GPT models (e.g., 4o, 5, o3, etc.). It enables batch processing of text snippets against a set of labels, significantly reducing the cost and time associated with manual coding, as well as a variety of other tools aimed at qualitative data preparation and analysis. 
 
 ## Installation
