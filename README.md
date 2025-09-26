@@ -32,3 +32,7 @@ If you find this tool helpful, consider supporting its development by [buying me
 
 ## Disclaimer 
 This application requires an OpenAI API key and will incur costs based on your usage. Batch processing typically offers significant cost savings compared to individual API calls. Please monitor your usage and costs through the OpenAI dashboard.
+
+Additionally, not all GPT models have been tested and may not work with this software. At this time, the models that have been tested are gpt-4o, gpt-4o-mini, and gpt-5.
+
+---
