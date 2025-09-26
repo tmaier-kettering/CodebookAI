@@ -1,4 +1,4 @@
-<p align="center">
+<p style="text-align:center;">
 
 ![CodebookAI Logo](./assets/BannerRoundedEdgesSmall.png)
 
