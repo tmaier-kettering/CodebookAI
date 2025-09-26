@@ -1,11 +1,11 @@
 
 ![CodebookAI Logo](./assets/BannerRoundedEdgesSmall.png)
 
-CodebookAI is a tool designed to assist qualitative researchers process large datasets through OpenAI's GPT models (e.g., 4o, 5, o3, etc.). It enables batch processing of text snippets against a set of labels, significantly reducing the cost and time associated with manual coding, as well as a variety of other tools aimed at qualitative data preparation and analysis. 
+CodebookAI is a tool designed to assist qualitative researchers in processing large datasets through OpenAI's GPT models (e.g., 4o, 5, o3, etc.). It enables batch processing of text snippets against a set of labels, significantly reducing the cost and time associated with manual coding, as well as a variety of other tools aimed at qualitative data preparation and analysis. 
 
 ## Getting Started
 
-- CodebookAI required you to supply an OpenAI API key ([Get one here](https://platform.openai.com/api-keys)). This keeps CodebookAI open-source and free to use. You control your own API key and are responsible for any costs incurred through your usage of OpenAI's services.
+- CodebookAI required you to supply an OpenAI API key in the Settings (File > Settings) ([Get one here](https://platform.openai.com/api-keys)). This keeps CodebookAI open-source and free to use. You control your own API key and are responsible for any costs incurred through your usage of OpenAI's services.
 - Download the latest .exe ([Get one here](https://github.com/tmaier-kettering/CodebookAI/releases)). This is a standalone application that does not require installation. Just double-click to run. Only tested on Windows 10.
 - Not sure what CodebookAI can do? Check out the [Example](wiki/Example/Example.md) section.
 
