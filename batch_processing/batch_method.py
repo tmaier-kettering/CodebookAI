@@ -11,6 +11,7 @@ from batch_processing.batch_error_handling import handle_batch_fail
 from file_handling.data_conversion import to_long_df, save_as_csv, join_datasets
 from file_handling.data_import import import_data
 from settings import config, secrets_store
+from settings.user_config import get_setting
 from openai import OpenAI
 from batch_processing.batch_creation import generate_single_label_batch, generate_multi_label_batch, \
     generate_keyword_extraction_batch
@@ -115,7 +116,7 @@ def send_batch(root: Any, type: str) -> Any:
         endpoint="/v1/responses",
         completion_window="24h",
         metadata={
-            "model": config.model,
+            "model": get_setting("model", "gpt-4o"),
             "type": type,
             "dataset(s)": joined_datasets
         }
@@ -217,7 +218,7 @@ def list_batches():
         The number of batches returned is limited by config.max_batches.
         Timestamps are converted to the configured timezone.
     """
-    limit = config.max_batches
+    limit = get_setting("max_batches", 4)
     client = get_client()
 
     batches = client.batches.list(limit=limit)
@@ -229,7 +230,7 @@ def list_batches():
 
     for batch in batches:
         # Convert timestamp to configured timezone
-        created_time = datetime.fromtimestamp(batch.created_at, ZoneInfo(config.time_zone))
+        created_time = datetime.fromtimestamp(batch.created_at, ZoneInfo(get_setting("time_zone", "UTC")))
 
         md = (batch.metadata or {})
         tuple_of_batch_data = (
