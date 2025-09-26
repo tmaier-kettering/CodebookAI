@@ -13,16 +13,14 @@ and non-sensitive configuration values stored in the config.py file.
 
 from __future__ import annotations
 
-import importlib
-import io
-import os
 from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, messagebox
 from zoneinfo import available_timezones
 
 from settings import config
-from settings.models_registry import get_models, refresh_models
+from settings.user_config import get_setting, set_setting, get_merged_config
+from settings.models_registry import get_models, refresh_models, refresh_client
 from settings.secrets_store import save_api_key, load_api_key, clear_api_key
 
 
@@ -86,9 +84,9 @@ class SettingsWindow(tk.Toplevel):
 
         # --- State variables ---
         self.var_api_key = tk.StringVar(value=load_api_key() or "")
-        self.var_model = tk.StringVar(value=getattr(config, "model", "gpt-4o"))
-        self.var_max_batches = tk.StringVar(value=str(getattr(config, "max_batches", 20)))
-        self.var_timezone = tk.StringVar(value=getattr(config, "time_zone", "UTC"))
+        self.var_model = tk.StringVar(value=get_setting("model", "gpt-4o"))
+        self.var_max_batches = tk.StringVar(value=str(get_setting("max_batches", 20)))
+        self.var_timezone = tk.StringVar(value=get_setting("time_zone", "UTC"))
         self.var_show_key = tk.BooleanVar(value=False)
 
         # --- Layout root frame ---
@@ -203,19 +201,19 @@ class SettingsWindow(tk.Toplevel):
         self.ent_api.config(show="" if self.var_show_key.get() else "•")
 
     def _reset_from_file(self):
-        """Reload non-secret settings from disk and reset UI fields. API key reloads from keyring."""
+        """Reload settings from defaults and user config, reset UI fields. API key reloads from keyring."""
         try:
-            importlib.reload(config)
             self.var_api_key.set(load_api_key() or "")
-            self.var_model.set(getattr(config, "model", "gpt-4o"))
-            self.var_max_batches.set(str(getattr(config, "max_batches", 20)))
-            self.var_timezone.set(getattr(config, "time_zone", "UTC"))
+            self.var_model.set(get_setting("model", "gpt-4o"))
+            self.var_max_batches.set(str(get_setting("max_batches", 20)))
+            self.var_timezone.set(get_setting("time_zone", "UTC"))
         except Exception as e:
             messagebox.showerror("Reset Error", str(e))
 
     def _clear_key(self):
         try:
             clear_api_key()
+            refresh_client()  # Refresh the models registry client
             self.var_api_key.set("")
             messagebox.showinfo("Settings", "API key cleared from secure storage.")
         except Exception as e:
@@ -247,50 +245,17 @@ class SettingsWindow(tk.Toplevel):
             # 1) Save secret to secure store
             if api_key:
                 save_api_key(api_key)
+                # Refresh the models registry client with the new API key
+                refresh_client()
 
-            # 2) Persist non-secrets to config.py
-            self._write_config_file(model, max_batches, time_zone)
-
-            # 3) Reload config for the running process
-            importlib.reload(config)
+            # 2) Save non-secrets to user config (JSON file in user directory)
+            set_setting("model", model)
+            set_setting("max_batches", max_batches)  
+            set_setting("time_zone", time_zone)
 
             self.destroy()
         except Exception as e:
             messagebox.showerror("Save Error", f"Could not save settings:\n{e}")
-
-    def _write_config_file(self, model: str, max_batches: int, time_zone: str) -> None:
-        """
-        Serialize non-secret settings and overwrite config.py with a .bak backup.
-        Never writes the API key.
-        """
-        cfg_path = Path(getattr(config, "__file__", "config.py")).resolve()
-        if cfg_path.suffix == ".pyc":
-            cfg_path = cfg_path.with_suffix(".py")
-        if not cfg_path.exists():
-            raise FileNotFoundError(f"config.py not found at {cfg_path}")
-
-        # Backup
-        bak_path = cfg_path.with_suffix(".py.bak")
-        try:
-            if bak_path.exists():
-                bak_path.unlink()
-            cfg_path.replace(bak_path)
-        except Exception as e:
-            messagebox.showwarning("Backup Warning", f"Could not create backup: {e}")
-
-        # Prepare new file contents (explicit + no secrets)
-        buf = io.StringIO()
-        buf.write("# Non-secret runtime settings\n")
-        buf.write(f"model = {repr(model)}\n")
-        buf.write(f"max_batches = {int(max_batches)}\n\n")
-        buf.write(f"time_zone = {repr(time_zone)}\n")
-
-        text = buf.getvalue()
-
-        # Write atomically
-        tmp_path = cfg_path.with_suffix(".py.tmp")
-        tmp_path.write_text(text, encoding="utf-8")
-        os.replace(tmp_path, cfg_path)
 
     # ---- UI callbacks ----
     def _on_refresh_models(self):

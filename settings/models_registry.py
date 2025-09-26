@@ -7,7 +7,12 @@ from typing import List
 from settings import secrets_store
 from openai import OpenAI
 
-client = OpenAI(api_key=secrets_store.load_api_key())
+# Initialize client only if API key is available, otherwise set to None
+try:
+    api_key = secrets_store.load_api_key()
+    client = OpenAI(api_key=api_key) if api_key else None
+except Exception:
+    client = None
 
 # Optional: persist across runs (so you don't hit the API even on first open)
 _CACHE_FILE = Path.home() / ".codebookai_models_cache.json"
@@ -34,6 +39,8 @@ def _fetch_models_from_api() -> list[str]:
     Replace this with your real API call.
     Must return a list[str] of model IDs.
     """
+    if client is None:
+        raise Exception("No API key available")
     api_list_of_models = client.models.list()
     models = []
     for m in api_list_of_models.data:
@@ -91,3 +98,16 @@ def refresh_models() -> list[str]:
             # Keep the existing list on failure
             pass
         return _MODELS or []
+
+
+def refresh_client() -> None:
+    """
+    Refresh the OpenAI client instance when API key is updated.
+    Call this after saving a new API key to reinitialize the client.
+    """
+    global client
+    try:
+        api_key = secrets_store.load_api_key()
+        client = OpenAI(api_key=api_key) if api_key else None
+    except Exception:
+        client = None
