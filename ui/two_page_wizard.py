@@ -418,8 +418,13 @@ class TwoPageWizard(tk.Toplevel):
             return None
 
         df1 = pd.DataFrame({"text": self.ds1_text.astype(str), str(self.ds1_name): self.ds1_label.astype(str)})
+        df1["occ"] = df1.groupby("text").cumcount()
+
         df2 = pd.DataFrame({"text": ds2_text.astype(str), str(ds2_name): ds2_label.astype(str)})
-        merged = pd.merge(df1, df2, on="text", how="inner")
+        df2["occ"] = df2.groupby("text").cumcount()
+
+        merged = pd.merge(df1, df2, on=["text", "occ"], how="inner")
+        merged = merged.drop(columns=["occ"])
 
         return WizardResult(
             ds1_text=self.ds1_text, ds1_label=self.ds1_label, ds1_name=str(self.ds1_name),

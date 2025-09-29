@@ -15,27 +15,26 @@ from ui.ui_utils import center_window
 # ----------------------------- Tk Figure Window -----------------------------
 
 def show_correlogram_window(parent: tk.Misc, fig, title: str):
-    """
-    Embed a Matplotlib Figure in its own persistent Tk Toplevel, parented to the app root.
-    Centers the window on screen.
-    """
     root = parent.winfo_toplevel() if isinstance(parent, tk.Misc) else None
 
     win = tk.Toplevel(master=root)
     win.title(title)
 
-    container = tk.Frame(win)
-    container.pack(fill="both", expand=True)
+    outer = tk.Frame(win)
+    outer.pack(fill="both", expand=True)
 
-    canvas = FigureCanvasTkAgg(fig, master=container)
-    canvas.draw()
-    canvas.get_tk_widget().pack(fill="both", expand=True)
+    # --- Canvas first
+    canvas = FigureCanvasTkAgg(fig, master=outer)
+    canvas_widget = canvas.get_tk_widget()
+    canvas_widget.pack(side="top", fill="both", expand=True)
+    canvas.draw()  # draw once before adding toolbar
 
-    toolbar = NavigationToolbar2Tk(canvas, container)
+    # --- Toolbar on top so controls stay visible
+    toolbar = NavigationToolbar2Tk(canvas, outer)
     toolbar.update()
-    toolbar.pack(fill="x")
+    toolbar.pack(side="top", fill="x")
 
-    # keep refs so they don’t get garbage collected
+    # Keep refs
     win._canvas = canvas
     win._toolbar = toolbar
     win._fig = fig
@@ -47,15 +46,44 @@ def show_correlogram_window(parent: tk.Misc, fig, title: str):
         except Exception:
             pass
         win.destroy()
-
     win.protocol("WM_DELETE_WINDOW", _on_close)
 
-    # --- Center on screen ---
-    # Let widgets compute their natural size, then center to that size
+    # --- Cap initial window size to screen and center
     win.update_idletasks()
-    width = max(900, win.winfo_reqwidth())    # ensure a reasonable minimum width
-    height = max(650, win.winfo_reqheight())  # ensure a reasonable minimum height
-    center_window(win, width, height)
+    sw, sh = win.winfo_screenwidth(), win.winfo_screenheight()
+    req_w, req_h = win.winfo_reqwidth(), win.winfo_reqheight()
+    width  = min(max(900, req_w), int(sw * 0.9))
+    height = min(max(650, req_h), int(sh * 0.9))
+    x = (sw - width) // 2
+    y = (sh - height) // 2
+    win.geometry(f"{width}x{height}+{x}+{y}")
+
+    # --- Responsive resize: resize figure to the canvas's pixel area
+    def _resize_figure(event=None):
+        try:
+            # Available pixels in the canvas widget
+            w_px = max(100, canvas_widget.winfo_width())
+            h_px = max(100, canvas_widget.winfo_height())
+            dpi = fig.get_dpi() or 100
+
+            # Resize the figure to match widget size (inches = px / dpi)
+            fig.set_size_inches(w_px / dpi, h_px / dpi, forward=True)
+
+            # Important: DO NOT call tight_layout() here; we use constrained_layout above.
+            # Update the Tk widget size as well (prevents gray gaps on some platforms)
+            canvas_widget.configure(width=w_px, height=h_px)
+
+            # Force a draw now (idle can skip on some Tk builds)
+            canvas.draw()
+        except Exception:
+            pass
+
+    # Bind to canvas size changes and toplevel window changes
+    canvas_widget.bind("<Configure>", _resize_figure)
+    win.bind("<Configure>", _resize_figure)
+
+    # Kick one initial resize after layout settles
+    win.after(0, _resize_figure)
 
     return win
 
@@ -258,10 +286,12 @@ def plot_label_correlogram(
     else:
         raise ValueError("normalize must be one of {'none','row','col','all'}")
 
-    # Plot (size scales with label cardinality)
-    fig_w = max(6, len(x_order) * 0.5 + 2)
-    fig_h = max(5, len(y_order) * 0.5 + 2)
-    fig, ax = plt.subplots(figsize=(fig_w, fig_h))
+    # Plot (cap size; window will make it responsive)
+    # Start with a modest base and cap growth so we don't create a gigantic figure.
+    fig_w = min(max(8, len(x_order) * 0.30 + 3), 14)  # between ~8" and 14"
+    fig_h = min(max(6, len(y_order) * 0.30 + 2), 12)  # between ~6" and 12"
+    fig, ax = plt.subplots(figsize=(fig_w, fig_h), constrained_layout=True)
+
     im = ax.imshow(mat_plot, aspect="auto", cmap=cmap)
 
     # Colorbar
