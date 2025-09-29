@@ -413,17 +413,43 @@ class TwoPageWizard(tk.Toplevel):
         ds2_label = label_series
         ds2_name = pg.get_dataset_name()
 
+        # --- Ensure dataset names are not identical ---
+        name1 = str(self.ds1_name)  # from page 1
+        name2 = str(ds2_name)  # from page 2
+
+        if name2 == name1:
+            # If same, append " (1)". If somehow that also collides, bump the number.
+            base = name2
+            n = 1
+            while f"{base} ({n})" == name1:
+                n += 1
+            name2 = f"{base} ({n})"
+
         if self.ds1_text is None or self.ds1_label is None:
             messagebox.showwarning("Incomplete", "Please complete Page 1 for Dataset 1.", parent=self)
             return None
 
-        df1 = pd.DataFrame({"text": self.ds1_text.astype(str), str(self.ds1_name): self.ds1_label.astype(str)})
-        df2 = pd.DataFrame({"text": ds2_text.astype(str), str(ds2_name): ds2_label.astype(str)})
-        merged = pd.merge(df1, df2, on="text", how="inner")
+        # Build dataframes
+        df1 = pd.DataFrame({
+            "text": self.ds1_text.astype(str),
+            name1: self.ds1_label.astype(str)
+        })
+        df2 = pd.DataFrame({
+            "text": ds2_text.astype(str),
+            name2: ds2_label.astype(str)
+        })
+
+        # Add an occurrence index per text to align duplicates 1-to-1 even if order differs
+        df1["occ"] = df1.groupby("text").cumcount()
+        df2["occ"] = df2.groupby("text").cumcount()
+
+        # Merge on text + occurrence, then drop the helper column
+        merged = pd.merge(df1, df2, on=["text", "occ"], how="inner")
+        merged = merged.drop(columns=["occ"])
 
         return WizardResult(
-            ds1_text=self.ds1_text, ds1_label=self.ds1_label, ds1_name=str(self.ds1_name),
-            ds2_text=ds2_text, ds2_label=ds2_label, ds2_name=str(ds2_name),
+            ds1_text=self.ds1_text, ds1_label=self.ds1_label, ds1_name=name1,
+            ds2_text=ds2_text, ds2_label=ds2_label, ds2_name=name2,
             df1=df1, df2=df2, merged=merged
         )
 
