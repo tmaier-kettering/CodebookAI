@@ -16,7 +16,6 @@ For example, for a new labeling schema, it may be critical to understand how wel
 **Create Dataset 2**: Choose the second dataset file, following the same settings selection as Dataset 1.
 
 ## WARNINGS 
-- The TEXT columns in both datasets must contain identical entries for the agreement statistics to be calculated. If there are no matching TEXT entries, the tool will return an error.
 - The LABEL columns in both datasets must contain categorical data. If either LABEL column contains non-categorical data (e.g., continuous numerical data), the tool will return an error.
 - If selecting both datasets from the same file, you must choose a different name for one of the two datasets or the tool will return an error.
 
