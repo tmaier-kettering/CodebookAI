@@ -10,6 +10,7 @@ matplotlib>=3.7.0        # Data visualization
 
 # System integration
 keyring>=25.0.0          # Secure credential storage across platforms
+tkinterdnd2>=0.4.0       # Drag-and-drop support for file selection on Windows
 
 # Type hints support for older Python versions
 typing-extensions>=4.0.0  # Enhanced type annotations (backport features)

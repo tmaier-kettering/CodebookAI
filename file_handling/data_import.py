@@ -22,6 +22,15 @@ from typing import Iterable, Optional, Sequence, Tuple, List
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
+# Import drag-and-drop support
+try:
+    from ui.drag_drop import enable_file_drop
+    from tkinterdnd2 import TkinterDnD
+    _HAS_DND = True
+except ImportError:
+    enable_file_drop = None
+    _HAS_DND = False
+
 # Optional pandas for robust Excel/CSV reading; gracefully degrade if unavailable
 try:
     import pandas as _pd  # type: ignore
@@ -35,7 +44,13 @@ except Exception:
 def _ensure_parent(parent: Optional[tk.Misc]) -> tuple[tk.Misc, Optional[tk.Tk]]:
     if parent is not None:
         return parent, None
-    root = tk.Tk()
+
+    # Create root with DnD support if available
+    if _HAS_DND:
+        root = TkinterDnD.Tk()
+    else:
+        root = tk.Tk()
+
     root.withdraw()
     try:
         root.attributes("-topmost", True)
@@ -230,6 +245,23 @@ def import_data(
     file_var = tk.StringVar()
     file_entry = ttk.Entry(dlg, textvariable=file_var, width=56)
     file_entry.grid(row=1, column=1, padx=4, pady=4, sticky="we")
+
+    # Enable drag-and-drop on the file entry
+    if enable_file_drop is not None:
+        def _handle_drop(path):
+            file_var.set(path)
+            _refresh_preview()
+
+        # Extract allowed extensions from filetypes
+        allowed_extensions = []
+        for name, pattern in filetypes:
+            if pattern != "*.*":
+                # Parse patterns like "*.csv *.txt" or "*.xlsx *.xls"
+                exts = pattern.replace("*", "").split()
+                allowed_extensions.extend(exts)
+
+        enable_file_drop(file_entry, _handle_drop,
+                        allowed_extensions if allowed_extensions else None)
 
     def browse_file():
         path = filedialog.askopenfilename(parent=dlg, title=title, filetypes=list(filetypes))

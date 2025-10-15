@@ -3,6 +3,12 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from typing import Optional
 
+# Import drag-and-drop support
+try:
+    from ui.drag_drop import enable_file_drop
+except ImportError:
+    enable_file_drop = None
+
 try:
     import pandas as pd
 except ImportError:
@@ -22,6 +28,7 @@ FILE_TYPES = [
     ("All supported", "*.csv *.tsv *.tab *.xlsx *.xls *.parquet"),
     ("All files", "*.*"),
 ]
+
 
 def _read_table(path: str, has_header: bool) -> pd.DataFrame:
     """
@@ -48,6 +55,7 @@ def _read_table(path: str, has_header: bool) -> pd.DataFrame:
     # Fallback: try CSV
     return pd.read_csv(path, header=header)
 
+
 def _coerce_preview(df: pd.DataFrame, has_header: bool) -> pd.DataFrame:
     """
     Return top 20 rows for preview. If no header, ensure generic column names.
@@ -56,8 +64,9 @@ def _coerce_preview(df: pd.DataFrame, has_header: bool) -> pd.DataFrame:
     if not has_header:
         # Assign generic names if pandas has numeric columns 0..N-1
         ncols = preview.shape[1]
-        preview.columns = [f"Column {i+1}" for i in range(ncols)]
+        preview.columns = [f"Column {i + 1}" for i in range(ncols)]
     return preview
+
 
 def _sample_df(df: pd.DataFrame, mode: str, value: float) -> pd.DataFrame:
     """
@@ -83,6 +92,7 @@ def _sample_df(df: pd.DataFrame, mode: str, value: float) -> pd.DataFrame:
         return df.sample(frac=min(frac, 1.0), replace=False, random_state=None)
     else:
         raise ValueError("Unknown sampling mode")
+
 
 def _save_dataframe_dialog(df: pd.DataFrame, suggested_name: str = "sampled_data") -> Optional[str]:
     """
@@ -110,6 +120,7 @@ def _save_dataframe_dialog(df: pd.DataFrame, suggested_name: str = "sampled_data
         messagebox.showerror("Save failed", f"Could not save file:\n{e}")
         return None
     return path
+
 
 # ----------------------------
 # Dialog
@@ -165,6 +176,18 @@ class ImportSampleDialog(tk.Toplevel):
         btn_browse = ttk.Button(file_frame, text="Browse…", command=self._browse_file)
         btn_browse.grid(row=1, column=1, sticky="e")
 
+        # Enable drag-and-drop on the entry
+        if enable_file_drop is not None:
+            def _handle_drop(path):
+                self.selected_path = path
+                self.entry_path.delete(0, tk.END)
+                self.entry_path.insert(0, path)
+                self._load_dataframe()
+
+            # Extract allowed extensions from FILE_TYPES
+            allowed_extensions = ['.csv', '.tsv', '.tab', '.xlsx', '.xls', '.parquet']
+            enable_file_drop(self.entry_path, _handle_drop, allowed_extensions)
+
         file_frame.columnconfigure(0, weight=1)
 
         # Options row
@@ -179,17 +202,19 @@ class ImportSampleDialog(tk.Toplevel):
         mode_frame = ttk.LabelFrame(opts, text="Sampling")
         mode_frame.grid(row=0, column=1, padx=(16, 0), sticky="w")
 
-        self.rb_rows = ttk.Radiobutton(mode_frame, text="By rows", value="rows", variable=self.var_mode, command=self._update_sampling_entry_state)
-        self.rb_pct = ttk.Radiobutton(mode_frame, text="By percent", value="percent", variable=self.var_mode, command=self._update_sampling_entry_state)
+        self.rb_rows = ttk.Radiobutton(mode_frame, text="By rows", value="rows", variable=self.var_mode,
+                                       command=self._update_sampling_entry_state)
+        self.rb_pct = ttk.Radiobutton(mode_frame, text="By percent", value="percent", variable=self.var_mode,
+                                      command=self._update_sampling_entry_state)
         self.rb_rows.grid(row=0, column=0, sticky="w")
         self.rb_pct.grid(row=0, column=1, sticky="w", padx=(12, 0))
 
         self.entry_rows = ttk.Entry(mode_frame, width=10, textvariable=self.var_rows)
         self.entry_percent = ttk.Entry(mode_frame, width=10, textvariable=self.var_percent)
-        ttk.Label(mode_frame, text="Rows:").grid(row=1, column=0, sticky="w", pady=(6,0))
-        self.entry_rows.grid(row=1, column=1, sticky="w", pady=(6,0))
-        ttk.Label(mode_frame, text="Percent (0–100):").grid(row=2, column=0, sticky="w", pady=(6,0))
-        self.entry_percent.grid(row=2, column=1, sticky="w", pady=(6,0))
+        ttk.Label(mode_frame, text="Rows:").grid(row=1, column=0, sticky="w", pady=(6, 0))
+        self.entry_rows.grid(row=1, column=1, sticky="w", pady=(6, 0))
+        ttk.Label(mode_frame, text="Percent (0–100):").grid(row=2, column=0, sticky="w", pady=(6, 0))
+        self.entry_percent.grid(row=2, column=1, sticky="w", pady=(6, 0))
 
         # Preview
         preview_frame = ttk.LabelFrame(self, text="Preview (top 20 rows)")
@@ -214,7 +239,6 @@ class ImportSampleDialog(tk.Toplevel):
         self.btn_cancel.grid(row=0, column=0)
         self.btn_ok = ttk.Button(btns, text="OK", command=self._on_ok, state="disabled")
         self.btn_ok.grid(row=0, column=1, padx=(0, 8))
-
 
         self._update_sampling_entry_state()
 
@@ -244,7 +268,7 @@ class ImportSampleDialog(tk.Toplevel):
             h = self.winfo_height()
             x = px + (pw - w) // 2
             y = py + (ph - h) // 2
-            self.geometry(f"+{max(0,x)}+{max(0,y)}")
+            self.geometry(f"+{max(0, x)}+{max(0, y)}")
 
     # ---------- Event handlers ----------
 
@@ -392,6 +416,7 @@ class ImportSampleDialog(tk.Toplevel):
 
     def _on_cancel(self):
         self.destroy()
+
 
 # ----------------------------
 # Public API
