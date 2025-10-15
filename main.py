@@ -17,6 +17,14 @@ sys.path.insert(0, project_root)
 
 # Import and run the main UI
 import tkinter as tk
+
+# Try to import TkinterDnD for drag-and-drop support
+try:
+    from tkinterdnd2 import TkinterDnD
+    _HAS_DND = True
+except ImportError:
+    _HAS_DND = False
+
 from ui.main_window import build_ui
 
 def _warm_models_cache():
@@ -27,6 +35,12 @@ def _warm_models_cache():
 
 if __name__ == "__main__":
     threading.Thread(target=_warm_models_cache, daemon=True).start()
-    root = tk.Tk()
+    
+    # Create root window with drag-and-drop support if available
+    if _HAS_DND:
+        root = TkinterDnD.Tk()
+    else:
+        root = tk.Tk()
+    
     build_ui(root)
     root.mainloop()

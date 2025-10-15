@@ -8,6 +8,12 @@ from typing import Callable, Optional
 import pandas as pd
 from ui.ui_utils import center_window  # keep your existing helper
 
+# Import drag-and-drop support
+try:
+    from ui.drag_drop import enable_file_drop
+except ImportError:
+    enable_file_drop = None
+
 
 # ----------------------------- Utility: Data Loading -----------------------------
 
@@ -183,8 +189,20 @@ class FileAndSelectionPage(ttk.Frame):
         ttk.Button(file_row, text="Choose file…", command=self._choose_file).pack(side="left")
         ttk.Checkbutton(file_row, text="Has header row", variable=self.has_header, command=self._reload_if_possible)\
             .pack(side="left", padx=12)
-        self.path_label = ttk.Label(file_row, text="", foreground="#555")
+        self.path_label = ttk.Label(file_row, text="(drag file here or use Choose file button)", foreground="#555")
         self.path_label.pack(side="left", padx=8)
+        
+        # Enable drag-and-drop on the path label
+        if enable_file_drop is not None:
+            def _handle_drop(path):
+                self.current_path = path
+                self.path_label.configure(text=os.path.basename(path))
+                self.name_selector.set_file_name(path)
+                self._load_and_preview(path)
+            
+            # Allow common data file types
+            allowed_extensions = ['.csv', '.tsv', '.txt', '.xlsx', '.xls', '.xlsm']
+            enable_file_drop(self.path_label, _handle_drop, allowed_extensions)
 
         # Preview (top 5)
         preview = ttk.LabelFrame(self, text="Preview (top 5)")

@@ -3,6 +3,12 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from typing import Optional
 
+# Import drag-and-drop support
+try:
+    from ui.drag_drop import enable_file_drop
+except ImportError:
+    enable_file_drop = None
+
 try:
     import pandas as pd
 except ImportError:
@@ -164,6 +170,18 @@ class ImportSampleDialog(tk.Toplevel):
         self.entry_path.grid(row=1, column=0, sticky="ew", padx=(0, 8))
         btn_browse = ttk.Button(file_frame, text="Browse…", command=self._browse_file)
         btn_browse.grid(row=1, column=1, sticky="e")
+        
+        # Enable drag-and-drop on the entry
+        if enable_file_drop is not None:
+            def _handle_drop(path):
+                self.selected_path = path
+                self.entry_path.delete(0, tk.END)
+                self.entry_path.insert(0, path)
+                self._load_dataframe()
+            
+            # Extract allowed extensions from FILE_TYPES
+            allowed_extensions = ['.csv', '.tsv', '.tab', '.xlsx', '.xls', '.parquet']
+            enable_file_drop(self.entry_path, _handle_drop, allowed_extensions)
 
         file_frame.columnconfigure(0, weight=1)
 
