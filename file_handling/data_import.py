@@ -467,14 +467,13 @@ def import_data(
         if not path:
             messagebox.showerror("Error", "No file selected.", parent=dlg)
             return
-        if not _loaded_rows:
-            try:
-                rows = _load_tabular(path)
-            except Exception as e:
-                messagebox.showerror("Load error", str(e), parent=dlg)
-                return
-        else:
-            rows = _loaded_rows
+        # Always load the full file without row limit for import
+        # (preview may have loaded only 200 rows)
+        try:
+            rows = _load_tabular(path)
+        except Exception as e:
+            messagebox.showerror("Load error", str(e), parent=dlg)
+            return
 
         body = rows[1:] if (has_headers.get() and rows) else rows
         if not body:
