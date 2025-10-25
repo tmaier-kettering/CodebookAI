@@ -53,11 +53,7 @@ def call_batch_download_async(parent: tk.Tk, batch_id: str) -> None:
         batch_id: Unique identifier of the batch job to download results from
     """
     def _worker():
-        try:
-            batch_method.get_batch_results(batch_id)
-            parent.after(0, lambda: print("Download finished for batch:", batch_id))
-        except Exception as error:
-            parent.after(0, lambda: messagebox.showerror("Download Error", str(error)))
+        batch_method.get_batch_results(batch_id)
     threading.Thread(target=_worker, daemon=True).start()
 
 

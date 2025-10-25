@@ -18,6 +18,7 @@ from batch_processing.batch_creation import generate_single_label_batch, generat
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Any
+import re
 
 
 def get_client() -> OpenAI:
@@ -139,6 +140,27 @@ def get_batch_status(batch_id: str) -> Any:
     return client.batches.retrieve(batch_id)
 
 
+    # Extract classification results from the API responses
+def _safe_parse_model_text(s: str):
+    t = s.strip()
+    # strip ```json fences if present
+    if t.startswith("```"):
+        t = re.sub(r"^```(?:json)?\s*", "", t)
+        t = re.sub(r"\s*```$", "", t)
+    try:
+        return json.loads(t), None
+    except Exception:
+        # try to repair {"label":"disapproval
+        m = re.match(r'^\{"label":"([^"}\n]+)', t)
+        if m:
+            return {"label": m.group(1)}, "Truncated JSON repaired"
+        # try label: disapproval
+        m2 = re.match(r'^\s*label\s*[:=]\s*"?([^"}\n]+)"?\s*$', t, flags=re.I)
+        if m2:
+            return {"label": m2.group(1)}, "Non-JSON label recovered"
+        return None, f"Unparsable JSON text: {t[:80]}"
+
+
 def get_batch_results(batch_id: str) -> None:
     """
     Download and save the results of a completed batch processing job.
@@ -173,18 +195,28 @@ def get_batch_results(batch_id: str) -> None:
         if line.strip()
     ]
 
-    # Extract classification results from the API responses
-    responses = []
+    responses, bad_rows = [], []
+
     for res in results:
-        text_output = res['response']['body']['output'][0]['content'][0]['text']
-        text_output_converted = json.loads(text_output)
-        metadata = res['response']['body']['metadata']
-        combined = {**metadata, **text_output_converted}  # Merge dictionaries
+        body = res['response']['body']
+        text_output = body['output'][0]['content'][0]['text']
+        parsed, note = _safe_parse_model_text(text_output)
+
+        if parsed is None:
+            bad_rows.append({
+                "custom_id": res.get("custom_id"),
+                "quote": body.get("metadata", {}).get("quote", ""),
+                "raw_text": text_output
+            })
+            continue
+
+        metadata = body.get('metadata', {})
+        combined = {"custom_id": res.get("custom_id"), **metadata, **parsed}
+        if note:
+            combined["repair_note"] = note
         responses.append(combined)
 
-    # Convert to DataFrame
-    # df = pd.DataFrame(responses)
-    # output = df.explode("label", ignore_index=True)
+    # Now continue with your DF creation
     df = to_long_df(responses)
     save_as_csv(df)
 
