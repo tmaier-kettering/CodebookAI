@@ -20,15 +20,15 @@ CodebookAI is a tool designed to assist qualitative researchers in processing la
 
 ---
 
-## License
-
-This project is provided as-is for educational and research purposes. Please ensure compliance with OpenAI's usage policies when using this application.
-
 ## How to Support
 
 [![BuyMeACoffee](./assets/buymeacoffee.png)](https://buymeacoffee.com/professthor)
 
 If you find this tool helpful, consider supporting its development by [buying me a coffee](https://buymeacoffee.com/professthor)! 
+
+## License
+
+This project is provided as-is for educational and research purposes. Please ensure compliance with OpenAI's usage policies when using this application.
 
 ## Disclaimer 
 This application requires an OpenAI API key and will incur costs based on your usage. Batch processing typically offers significant cost savings compared to individual API calls. Please monitor your usage and costs through the OpenAI dashboard.
