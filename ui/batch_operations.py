@@ -3,12 +3,20 @@ Asynchronous batch processing operations for the UI.
 
 This module provides functions for managing batch processing jobs
 in background threads to prevent UI freezing during API operations.
+Compatible with both tkinter and customtkinter.
 """
 
 import threading
 import tkinter as tk
+import customtkinter as ctk
 from functools import partial
-from tkinter import messagebox
+from typing import Union
+
+# Import dialog wrappers
+try:
+    from ui.dialogs import show_error
+except ImportError:
+    from dialogs import show_error
 
 # Handle imports based on how the script is run
 try:
@@ -24,7 +32,7 @@ except ImportError:
     from ui.ui_utils import populate_treeview
 
 
-def call_batch_async(parent: tk.Tk, type) -> None:
+def call_batch_async(parent: Union[tk.Tk, ctk.CTk], type: str) -> None:
     """
     Start a new batch processing job on a background thread.
 
@@ -32,7 +40,8 @@ def call_batch_async(parent: tk.Tk, type) -> None:
     to prevent the UI from freezing during file selection and API calls.
 
     Args:
-        parent: Parent Tkinter window for error dialog ownership
+        parent: Parent window for error dialog ownership
+        type: Type of batch processing job to start
     """
     def _worker():
         try:
@@ -40,16 +49,16 @@ def call_batch_async(parent: tk.Tk, type) -> None:
             refresh_batches_async(parent)
             parent.after(0, lambda: print("batch_method finished:", result))
         except Exception as error:
-            parent.after(0, lambda: messagebox.showerror("Batch Error", str(error)))
+            parent.after(0, lambda: show_error("Batch Error", str(error)))
     threading.Thread(target=_worker, daemon=True).start()
 
 
-def call_batch_download_async(parent: tk.Tk, batch_id: str) -> None:
+def call_batch_download_async(parent: Union[tk.Tk, ctk.CTk], batch_id: str) -> None:
     """
     Download batch processing results on a background thread.
 
     Args:
-        parent: Parent Tkinter window for error dialog ownership
+        parent: Parent window for error dialog ownership
         batch_id: Unique identifier of the batch job to download results from
     """
     def _worker():
@@ -57,7 +66,7 @@ def call_batch_download_async(parent: tk.Tk, batch_id: str) -> None:
     threading.Thread(target=_worker, daemon=True).start()
 
 
-def refresh_batches_async(parent: tk.Tk) -> None:
+def refresh_batches_async(parent: Union[tk.Tk, ctk.CTk]) -> None:
     """
     Refresh the batch job lists on a background thread.
 
@@ -65,7 +74,7 @@ def refresh_batches_async(parent: tk.Tk) -> None:
     updates both the ongoing and completed batch tables.
 
     Args:
-        parent: Parent Tkinter window containing the batch tables
+        parent: Parent window containing the batch tables
     """
     def _worker():
         try:
@@ -78,16 +87,16 @@ def refresh_batches_async(parent: tk.Tk) -> None:
 
             parent.after(0, _update_ui)
         except Exception as error:
-            parent.after(0, partial(messagebox.showerror, "Refresh Error", str(error)))
+            parent.after(0, partial(show_error, "Refresh Error", str(error)))
     threading.Thread(target=_worker, daemon=True).start()
 
 
-def cancel_batch_async(parent: tk.Tk, batch_id: str) -> None:
+def cancel_batch_async(parent: Union[tk.Tk, ctk.CTk], batch_id: str) -> None:
     """
     Cancel a batch processing job on a background thread.
 
     Args:
-        parent: Parent Tkinter window for error dialog ownership
+        parent: Parent window for error dialog ownership
         batch_id: Unique identifier of the batch job to cancel
     """
     def _worker():
@@ -95,5 +104,5 @@ def cancel_batch_async(parent: tk.Tk, batch_id: str) -> None:
             batch_method.cancel_batch(batch_id)
             parent.after(0, lambda: print("Cancel finished for batch:", batch_id))
         except Exception as error:
-            parent.after(0, lambda: messagebox.showerror("Cancel Error", str(error)))
+            parent.after(0, lambda: show_error("Cancel Error", str(error)))
     threading.Thread(target=_worker, daemon=True).start()

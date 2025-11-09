@@ -1,12 +1,15 @@
 """
 Drag-and-drop utility for file selection widgets.
 
-Provides a reusable function to enable drag-and-drop file selection on tkinter widgets,
+Provides a reusable function to enable drag-and-drop file selection on widgets,
 specifically for Windows Explorer file drag-and-drop support.
+Compatible with both tkinter and customtkinter widgets.
 """
 
 import os
-from typing import Callable, Optional
+import tkinter as tk
+import customtkinter as ctk
+from typing import Callable, Optional, Union
 
 try:
     from tkinterdnd2 import DND_FILES, TkinterDnD
@@ -15,13 +18,14 @@ except ImportError:
     _HAS_DND = False
 
 
-def enable_file_drop(widget, callback: Callable[[str], None], 
+def enable_file_drop(widget: Union[tk.Widget, ctk.CTkBaseClass], 
+                     callback: Callable[[str], None], 
                      file_types: Optional[list[str]] = None) -> bool:
     """
-    Enable drag-and-drop file selection on a tkinter widget.
+    Enable drag-and-drop file selection on a widget.
     
     Args:
-        widget: The tkinter widget to enable drag-and-drop on
+        widget: The widget to enable drag-and-drop on (tkinter or customtkinter)
         callback: Function to call with the file path when a file is dropped
         file_types: Optional list of allowed file extensions (e.g., ['.csv', '.xlsx'])
                    If None, all file types are allowed
@@ -30,8 +34,8 @@ def enable_file_drop(widget, callback: Callable[[str], None],
         True if drag-and-drop was successfully enabled, False otherwise
     
     Example:
-        >>> import tkinter as tk
-        >>> entry = tk.Entry(root)
+        >>> import customtkinter as ctk
+        >>> entry = ctk.CTkEntry(root)
         >>> enable_file_drop(entry, lambda path: entry_var.set(path))
     """
     if not _HAS_DND:
@@ -91,22 +95,26 @@ def enable_file_drop(widget, callback: Callable[[str], None],
         return False
 
 
-def make_window_dnd_compatible(window):
+def make_window_dnd_compatible(window: Union[tk.Tk, ctk.CTk, tk.Toplevel, ctk.CTkToplevel]):
     """
-    Make a tkinter window compatible with drag-and-drop.
+    Make a window compatible with drag-and-drop.
     
     This should be called on the root window or Toplevel to enable DnD support.
-    For regular tk.Tk() or tk.Toplevel(), this will upgrade them to support DnD.
+    For regular tk.Tk() or ctk.CTk(), this will upgrade them to support DnD.
     
     Args:
-        window: A tk.Tk() or tk.Toplevel() window
+        window: A window instance (tkinter or customtkinter)
     
     Returns:
         The window (potentially upgraded to TkinterDnD version)
     
     Note:
         If using TkinterDnD, you should create your root window as TkinterDnD.Tk()
-        instead of tk.Tk() for best results. This function is a helper for existing windows.
+        instead of tk.Tk() or ctk.CTk() for best results. This function is a helper
+        for existing windows.
+        
+        CustomTkinter windows will work with TkinterDnD if the root was created
+        as TkinterDnD.Tk() (as done in main.py).
     """
     if not _HAS_DND:
         return window

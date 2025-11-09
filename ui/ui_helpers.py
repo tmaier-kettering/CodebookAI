@@ -3,16 +3,19 @@ UI helper functions for widget creation and menu management.
 
 This module provides helper functions for creating common UI components
 and managing context menus and popup displays.
+Compatible with both tkinter and customtkinter.
 """
 
 import tkinter as tk
 from tkinter import ttk
+import customtkinter as ctk
+from typing import Union
 
 # Constants for UI components
 TABLE_HEIGHT_ROWS = 12
 
 
-def make_tab_with_tree(parent_frame: ttk.Frame) -> tuple[ttk.Frame, ttk.Treeview]:
+def make_tab_with_tree(parent_frame: Union[ttk.Frame, ctk.CTkFrame]) -> tuple[Union[ttk.Frame, ctk.CTkFrame], ttk.Treeview]:
     """
     Create a Treeview widget with horizontal scrollbar inside a tab frame.
 
@@ -60,7 +63,7 @@ def popup_menu(event: tk.Event, tree: ttk.Treeview, menu: tk.Menu) -> None:
         menu.grab_release()
 
 
-def popup_menu_below_widget(widget: tk.Widget, menu: tk.Menu) -> None:
+def popup_menu_below_widget(widget: Union[tk.Widget, ctk.CTkBaseClass], menu: tk.Menu) -> None:
     """
     Display a context menu directly below a widget.
 

@@ -8,6 +8,9 @@ pydantic>=2.0.0          # Data validation and settings management
 openpyxl>=3.1.0          # Excel file reading/writing support
 matplotlib>=3.7.0        # Data visualization
 
+# UI Framework
+customtkinter>=5.2.0     # Modern, customizable tkinter replacement with theming
+
 # System integration
 keyring>=25.0.0          # Secure credential storage across platforms
 tkinterdnd2>=0.4.0       # Drag-and-drop support for file selection on Windows
