@@ -3,18 +3,21 @@ UI utility functions for window management and widget operations.
 
 This module provides common UI utility functions used across the application
 for window positioning, widget configuration, and data display.
+Compatible with both tkinter and customtkinter.
 """
 
 import tkinter as tk
 from tkinter import ttk
+import customtkinter as ctk
+from typing import Union
 
 
-def center_window(win: tk.Tk, width: int, height: int) -> None:
+def center_window(win: Union[tk.Tk, ctk.CTk, tk.Toplevel, ctk.CTkToplevel], width: int, height: int) -> None:
     """
-    Center a Tkinter window on the screen.
+    Center a window on the screen.
 
     Args:
-        win: The Tkinter window to center
+        win: The window to center (tkinter or customtkinter)
         width: Desired window width in pixels
         height: Desired window height in pixels
     """
