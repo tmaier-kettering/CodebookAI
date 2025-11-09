@@ -9,23 +9,33 @@ This module provides a modal settings dialog that allows users to configure:
 
 The settings are split between sensitive data (API keys) stored in the OS keyring
 and non-sensitive configuration values stored in the config.py file.
+Migrated to CustomTkinter for modern UI.
 """
 
 from __future__ import annotations
 
 import os
 import tkinter as tk
-from tkinter import ttk, messagebox
+import customtkinter as ctk
+from tkinter import ttk
+from typing import Union
 from zoneinfo import available_timezones
+
 from settings.user_config import get_setting, set_setting
 from settings.models_registry import get_models, refresh_models, refresh_client
 from settings.secrets_store import save_api_key, load_api_key, clear_api_key
 
+# Import dialog wrappers for messagebox
+try:
+    from ui.dialogs import show_info, show_warning, show_error
+except ImportError:
+    from dialogs import show_info, show_warning, show_error
+
 
 # -------------------- Simple tooltip helper --------------------
 class Tooltip:
-    """Lightweight tooltip for Tk/ttk widgets."""
-    def __init__(self, widget: tk.Widget, text: str, delay_ms: int = 500):
+    """Lightweight tooltip for Tk/ttk/CTk widgets."""
+    def __init__(self, widget: Union[tk.Widget, ctk.CTkBaseClass], text: str, delay_ms: int = 500):
         self.widget = widget
         self.text = text
         self.delay_ms = delay_ms
@@ -54,12 +64,12 @@ class Tooltip:
         self._tip = tw = tk.Toplevel(self.widget)
         tw.wm_overrideredirect(True)
         tw.wm_geometry(f"+{x}+{y}")
-        lbl = tk.Label(
+        lbl = ctk.CTkLabel(
             tw, text=self.text, justify="left",
-            background="#ffffe0", relief="solid", borderwidth=1,
-            font=("TkDefaultFont", 9), padx=6, pady=4
+            fg_color="#ffffe0", text_color="black",
+            corner_radius=4, font=("TkDefaultFont", 9)
         )
-        lbl.pack()
+        lbl.pack(padx=6, pady=4)
 
     def _hide(self, _=None):
         self._unschedule()
@@ -69,12 +79,12 @@ class Tooltip:
 # ---------------------------------------------------------------
 
 
-class SettingsWindow(tk.Toplevel):
+class SettingsWindow(ctk.CTkToplevel):
     """
-    Modal settings configuration dialog.
+    Modal settings configuration dialog using CustomTkinter.
     """
 
-    def __init__(self, parent: tk.Tk | tk.Toplevel):
+    def __init__(self, parent: Union[tk.Tk, ctk.CTk, tk.Toplevel, ctk.CTkToplevel]):
         super().__init__(parent)
         self.title("Settings")
         self.transient(parent)  # keep on top of parent
@@ -89,8 +99,8 @@ class SettingsWindow(tk.Toplevel):
 
         # --- Layout root frame ---
         pad = {"padx": 12, "pady": 8}
-        frm = ttk.Frame(self, padding=16)
-        frm.grid(row=0, column=0, sticky="nsew")
+        frm = ctk.CTkFrame(self)
+        frm.grid(row=0, column=0, sticky="nsew", padx=16, pady=16)
 
         # Column sizing
         frm.columnconfigure(0, weight=0)  # labels
@@ -98,24 +108,30 @@ class SettingsWindow(tk.Toplevel):
         frm.columnconfigure(2, weight=0)  # trailing controls
 
         # ---- API Key ----
-        lbl_api = ttk.Label(frm, text="OpenAI API Key:")
+        lbl_api = ctk.CTkLabel(frm, text="OpenAI API Key:")
         lbl_api.grid(row=0, column=0, sticky="w", **pad)
 
         # Small clickable "info" icon to open key page
-        info = tk.Label(
+        info = ctk.CTkLabel(
             frm,
             text="ⓘ",
-            fg="blue",
+            text_color="blue",
             cursor="hand2",
             font=("TkDefaultFont", 10, "underline")
         )
         info.grid(row=0, column=0, sticky="e", padx=(0, 4))
-        info.bind("<Button-1>", lambda e: os.startfile("https://platform.openai.com/api-keys"))
+        
+        # Handle cross-platform URL opening
+        def open_api_key_url(e):
+            import webbrowser
+            webbrowser.open("https://platform.openai.com/api-keys")
+        
+        info.bind("<Button-1>", open_api_key_url)
 
-        self.ent_api = ttk.Entry(frm, textvariable=self.var_api_key, width=48, show="•")
+        self.ent_api = ctk.CTkEntry(frm, textvariable=self.var_api_key, width=400, show="•")
         self.ent_api.grid(row=0, column=1, sticky="we", **pad)
 
-        chk_show = ttk.Checkbutton(
+        chk_show = ctk.CTkCheckBox(
             frm,
             text="Show",
             variable=self.var_show_key,
@@ -124,9 +140,9 @@ class SettingsWindow(tk.Toplevel):
         chk_show.grid(row=0, column=2, sticky="w", **pad)
 
         # ---- Model ----
-        ttk.Label(frm, text="Model:").grid(row=1, column=0, sticky="w", **pad)
+        ctk.CTkLabel(frm, text="Model:").grid(row=1, column=0, sticky="w", **pad)
 
-        # Model combobox in column 1
+        # Model combobox in column 1 (using ttk.Combobox as CTk doesn't have a direct replacement)
         self.cmb_model = ttk.Combobox(
             frm,
             textvariable=self.var_model,
@@ -137,7 +153,7 @@ class SettingsWindow(tk.Toplevel):
         self.cmb_model.grid(row=1, column=1, sticky="w", **pad)
 
         # Refresh button in column 2, with tooltip
-        self.btn_refresh_models = ttk.Button(frm, text="↻", width=3, command=self._on_refresh_models)
+        self.btn_refresh_models = ctk.CTkButton(frm, text="↻", width=40, command=self._on_refresh_models)
         self.btn_refresh_models.grid(row=1, column=2, sticky="w", **pad)
         Tooltip(
             self.btn_refresh_models,
@@ -146,7 +162,7 @@ class SettingsWindow(tk.Toplevel):
         )
 
         # ---- Time Zone ----
-        ttk.Label(frm, text="Time Zone:").grid(row=2, column=0, sticky="w", **pad)
+        ctk.CTkLabel(frm, text="Time Zone:").grid(row=2, column=0, sticky="w", **pad)
         self.cmb_timezone = ttk.Combobox(
             frm,
             textvariable=self.var_timezone,
@@ -157,7 +173,8 @@ class SettingsWindow(tk.Toplevel):
         self.cmb_timezone.grid(row=2, column=1, columnspan=2, sticky="w", **pad)
 
         # ---- Max Batches ----
-        ttk.Label(frm, text="Max Batches:").grid(row=3, column=0, sticky="w", **pad)
+        ctk.CTkLabel(frm, text="Max Batches:").grid(row=3, column=0, sticky="w", **pad)
+        # Using ttk.Spinbox as CTk doesn't have a direct equivalent
         self.ent_max = ttk.Spinbox(
             frm,
             from_=1,
@@ -168,12 +185,13 @@ class SettingsWindow(tk.Toplevel):
         self.ent_max.grid(row=3, column=1, sticky="w", **pad)
 
         # ---- Buttons ----
-        btns = ttk.Frame(frm)
+        btns = ctk.CTkFrame(frm, fg_color="transparent")
         btns.grid(row=4, column=0, columnspan=3, sticky="e", pady=(12, 0))
-        ttk.Button(btns, text="Reset to File", command=self._reset_from_file).grid(row=0, column=0, padx=6)
-        ttk.Button(btns, text="Clear Key", command=self._clear_key).grid(row=0, column=1, padx=6)
-        ttk.Button(btns, text="Cancel", command=self.destroy).grid(row=0, column=2, padx=6)
-        ttk.Button(btns, text="Save", style="Accent.TButton", command=self._save).grid(row=0, column=3, padx=6)
+        
+        ctk.CTkButton(btns, text="Reset to File", command=self._reset_from_file).grid(row=0, column=0, padx=6)
+        ctk.CTkButton(btns, text="Clear Key", command=self._clear_key).grid(row=0, column=1, padx=6)
+        ctk.CTkButton(btns, text="Cancel", command=self.destroy).grid(row=0, column=2, padx=6)
+        ctk.CTkButton(btns, text="Save", command=self._save).grid(row=0, column=3, padx=6)
 
         # Keyboard shortcuts
         self.bind("<Return>", lambda e: self._save())
@@ -184,6 +202,7 @@ class SettingsWindow(tk.Toplevel):
 
     # ---- helpers ----
     def _center_over_parent(self, parent):
+        """Center this dialog over the parent window."""
         self.update_idletasks()
         px = parent.winfo_rootx()
         py = parent.winfo_rooty()
@@ -196,7 +215,9 @@ class SettingsWindow(tk.Toplevel):
         self.geometry(f"+{x}+{y}")
 
     def _toggle_api_visibility(self):
-        self.ent_api.config(show="" if self.var_show_key.get() else "•")
+        """Toggle visibility of API key in entry field."""
+        # CTkEntry uses configure instead of config
+        self.ent_api.configure(show="" if self.var_show_key.get() else "•")
 
     def _reset_from_file(self):
         """Reload settings from defaults and user config, reset UI fields. API key reloads from keyring."""
@@ -206,18 +227,20 @@ class SettingsWindow(tk.Toplevel):
             self.var_max_batches.set(str(get_setting("max_batches", 20)))
             self.var_timezone.set(get_setting("time_zone", "UTC"))
         except Exception as e:
-            messagebox.showerror("Reset Error", str(e))
+            show_error("Reset Error", str(e))
 
     def _clear_key(self):
+        """Clear API key from secure storage."""
         try:
             clear_api_key()
             refresh_client()  # Refresh the models registry client
             self.var_api_key.set("")
-            messagebox.showinfo("Settings", "API key cleared from secure storage.")
+            show_info("Settings", "API key cleared from secure storage.")
         except Exception as e:
-            messagebox.showerror("Error", f"Could not clear key:\n{e}")
+            show_error("Error", f"Could not clear key:\n{e}")
 
     def _validate(self) -> tuple[bool, str]:
+        """Validate settings input."""
         # max_batches must be an int >= 1
         try:
             mb = int(self.var_max_batches.get().strip())
@@ -229,9 +252,10 @@ class SettingsWindow(tk.Toplevel):
         return True, ""
 
     def _save(self):
+        """Save settings to secure storage and config file."""
         ok, msg = self._validate()
         if not ok:
-            messagebox.showwarning("Invalid Input", msg)
+            show_warning("Invalid Input", msg)
             return
 
         api_key = self.var_api_key.get().strip()
@@ -253,7 +277,7 @@ class SettingsWindow(tk.Toplevel):
 
             self.destroy()
         except Exception as e:
-            messagebox.showerror("Save Error", f"Could not save settings:\n{e}")
+            show_error("Save Error", f"Could not save settings:\n{e}")
 
     # ---- UI callbacks ----
     def _on_refresh_models(self):
@@ -265,7 +289,7 @@ class SettingsWindow(tk.Toplevel):
             current = self.var_model.get().strip()
             models = refresh_models() or []
             if not models:
-                messagebox.showwarning("Models", "No models returned. Check your API key and network.")
+                show_warning("Models", "No models returned. Check your API key and network.")
                 return
             self.cmb_model["values"] = models
             # Keep prior selection if still available; otherwise pick first
@@ -274,6 +298,6 @@ class SettingsWindow(tk.Toplevel):
                 self.var_model.set(current)
             else:
                 self.var_model.set(models[0])
-            messagebox.showinfo("Models", "Model list refreshed from OpenAI.")
+            show_info("Models", "Model list refreshed from OpenAI.")
         except Exception as e:
-            messagebox.showerror("Models", f"Failed to refresh models:\n{e}")
+            show_error("Models", f"Failed to refresh models:\n{e}")
