@@ -20,7 +20,16 @@ from pathlib import Path
 from typing import Iterable, Optional, Sequence, Tuple, List
 
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import ttk
+import customtkinter as ctk
+
+# Import dialog wrappers
+try:
+    from ui.dialogs import show_error, ask_open_filename
+except ImportError:
+    from tkinter import messagebox, filedialog
+    show_error = messagebox.showerror
+    ask_open_filename = filedialog.askopenfilename
 
 # Import drag-and-drop support
 try:
@@ -264,7 +273,7 @@ def import_data(
                         allowed_extensions if allowed_extensions else None)
 
     def browse_file():
-        path = filedialog.askopenfilename(parent=dlg, title=title, filetypes=list(filetypes))
+        path = ask_open_filename(parent=dlg, title=title, filetypes=list(filetypes))
         if path:
             file_var.set(path)
             _refresh_preview()
@@ -405,7 +414,7 @@ def import_data(
         try:
             rows = _load_tabular(path, max_rows=200)
         except Exception as e:
-            messagebox.showerror("Load error", str(e), parent=dlg)
+            show_error("Load error", str(e), parent=dlg)
             _initial_blank_preview()
             return
 
@@ -465,19 +474,19 @@ def import_data(
         nonlocal result_values, result_dataset_name
         path = file_var.get().strip()
         if not path:
-            messagebox.showerror("Error", "No file selected.", parent=dlg)
+            show_error("Error", "No file selected.", parent=dlg)
             return
         # Always load the full file without row limit for import
         # (preview may have loaded only 200 rows)
         try:
             rows = _load_tabular(path)
         except Exception as e:
-            messagebox.showerror("Load error", str(e), parent=dlg)
+            show_error("Load error", str(e), parent=dlg)
             return
 
         body = rows[1:] if (has_headers.get() and rows) else rows
         if not body:
-            messagebox.showerror("Error", "The file appears to have no data rows.", parent=dlg)
+            show_error("Error", "The file appears to have no data rows.", parent=dlg)
             return
 
         col_idx = selected_col.get()
@@ -492,16 +501,16 @@ def import_data(
             dataset_name = _filename_stem or "data"
         elif mode == 1:
             if not has_headers.get():
-                messagebox.showerror("Dataset Name error", "Column header option requires headers to be enabled.", parent=dlg)
+                show_error("Dataset Name error", "Column header option requires headers to be enabled.", parent=dlg)
                 return
             dataset_name = _selected_header_label()
             if not dataset_name.strip():
-                messagebox.showerror("Dataset Name error", "Selected column has an empty header.", parent=dlg)
+                show_error("Dataset Name error", "Selected column has an empty header.", parent=dlg)
                 return
         else:
             dataset_name = dataset_name_other.get().strip()
             if not dataset_name:
-                messagebox.showerror("Dataset Name error", "Please type a dataset_name in the 'Other' field.", parent=dlg)
+                show_error("Dataset Name error", "Please type a dataset_name in the 'Other' field.", parent=dlg)
                 return
 
         result_values = out
