@@ -78,7 +78,8 @@ def generate_single_label_batch(labels, quotes) -> BytesIO | None:
                 "model": model,
                 "input": [
                     {"role": "user",
-                     "content": f"Label this quote with exactly one label from the allowed set.\nQuote: {q}"}
+                     "content": f"Label this quote with exactly one label from the allowed set.\n"
+                            f"Allowed: {', '.join(labels)}\nQuote: {q}"}
                 ],
                 "text": {
                     "format": {
