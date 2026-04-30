@@ -15,13 +15,17 @@ Updated per request:
   Data Analysis > Reliability Statistics
   Help > Github Repo
 - Added a "Batches" title above the table area at the bottom of the page.
+- Migrated to CustomTkinter for modern UI
 """
 
-import sys, os
+import sys
+import os
 import tkinter as tk
 from pathlib import Path
 from tkinter import ttk
 import webbrowser
+import customtkinter as ctk
+from typing import Union
 
 from asset_path import asset_path
 from live_processing.correlogram import open_correlogram_wizard
@@ -40,6 +44,7 @@ try:
         call_batch_download_async,
         cancel_batch_async,
     )
+    from theme_config import get_title_font
 except ImportError:  # fallback when running as a package (ui.*)
     from ui.settings_window import SettingsWindow
     from ui.tooltip import ToolTip
@@ -51,6 +56,7 @@ except ImportError:  # fallback when running as a package (ui.*)
         call_batch_download_async,
         cancel_batch_async,
     )
+    from ui.theme_config import get_title_font
 
 # Ensure live modules can be imported when run directly
 try:
@@ -72,13 +78,16 @@ WINDOW_SIZE = (1000, 620)  # width, height
 
 
 def _open_help_docs():
+    """Open help documentation in web browser."""
     webbrowser.open("https://github.com/tmaier-kettering/CodebookAI?tab=readme-ov-file#readme")
 
+
 def _open_report_bug():
+    """Open issue reporting page in web browser."""
     webbrowser.open("https://github.com/tmaier-kettering/CodebookAI/issues/new")
 
 
-def build_ui(root: tk.Tk) -> None:
+def build_ui(root: Union[tk.Tk, ctk.CTk]) -> None:
     """
     Build and configure the main application user interface.
 
@@ -89,10 +98,15 @@ def build_ui(root: tk.Tk) -> None:
     - Refresh control and context menus for batch operations
 
     Args:
-        root: The main Tkinter window to build the UI in
+        root: The main window to build the UI in (tkinter or customtkinter)
     """
     root.title(APP_TITLE)
-    root.iconbitmap(asset_path("app.ico"))
+    
+    # Set icon if available (CTk supports this)
+    try:
+        root.iconbitmap(asset_path("app.ico"))
+    except Exception:
+        pass  # Icon may not be available on all platforms
 
     # ===== Top-level grid: header, spacer, table area =====
     root.columnconfigure(0, weight=1)
@@ -100,9 +114,8 @@ def build_ui(root: tk.Tk) -> None:
     root.rowconfigure(1, weight=1)  # spacer/filler (kept for compatibility)
     root.rowconfigure(2, weight=0)  # table area
 
-    # ===== Header (title & subtitle only; no buttons) =====
     # ===== Header (banner image) =====
-    header = ttk.Frame(root, padding=(0, 0))
+    header = ctk.CTkFrame(root, fg_color="transparent")
     header.grid(row=0, column=0, sticky="ew")
     header.columnconfigure(0, weight=1)
 
@@ -112,10 +125,11 @@ def build_ui(root: tk.Tk) -> None:
     scale_factor = 3
     root.banner_img = banner_img.subsample(scale_factor, scale_factor)  # keep a ref on root
 
-    banner_lbl = ttk.Label(header, image=root.banner_img, anchor="center")
+    banner_lbl = tk.Label(header, image=root.banner_img, anchor="center", bg=header.cget("fg_color")[1])
     banner_lbl.grid(row=0, column=0, sticky="n", padx=0, pady=0)
 
     # ===== Menu Bar =====
+    # Note: CustomTkinter doesn't have Menu widget, so we use tkinter Menu
     menubar = tk.Menu(root)
 
     # File
@@ -187,26 +201,31 @@ def build_ui(root: tk.Tk) -> None:
     root.config(menu=menubar)
 
     # ===== Table area =====
-    table_area = ttk.Frame(root, padding=(16, 12))
-    table_area.grid(row=2, column=0, sticky="ew")
+    table_area = ctk.CTkFrame(root, fg_color="transparent")
+    table_area.grid(row=2, column=0, sticky="ew", padx=16, pady=12)
     table_area.columnconfigure(0, weight=1)
 
     # Controls row with section title (left) and refresh button (right)
-    controls = ttk.Frame(table_area)
+    controls = ctk.CTkFrame(table_area, fg_color="transparent")
     controls.grid(row=0, column=0, sticky="ew")
     controls.columnconfigure(0, weight=1)
     controls.columnconfigure(1, weight=0)
 
-    section_title = ttk.Label(controls, text="Batches", font=("Segoe UI", 12, "bold"))
+    section_title = ctk.CTkLabel(controls, text="Batches", font=get_title_font())
     section_title.grid(row=0, column=0, sticky="w")
 
-    refresh_btn = ttk.Button(controls, text="↻", width=3, command=lambda: refresh_batches_async(root))
+    refresh_btn = ctk.CTkButton(
+        controls, 
+        text="↻", 
+        width=40, 
+        command=lambda: refresh_batches_async(root)
+    )
     refresh_btn.grid(row=0, column=1, sticky="e")
     ToolTip(refresh_btn, "Refresh - Update the batch job lists with current status")
 
-    # Notebook with two tabs
+    # Notebook with two tabs (using ttk.Notebook as CTk doesn't have a direct equivalent)
     notebook = ttk.Notebook(table_area)
-    notebook.grid(row=1, column=0, sticky="ew")
+    notebook.grid(row=1, column=0, sticky="ew", pady=(8, 0))
 
     ongoing_tab, tree_ongoing = make_tab_with_tree(notebook)
     done_tab, tree_done = make_tab_with_tree(notebook)
@@ -254,6 +273,6 @@ def build_ui(root: tk.Tk) -> None:
 
 
 if __name__ == "__main__":
-    r = tk.Tk()
+    r = ctk.CTk()
     build_ui(r)
     r.mainloop()

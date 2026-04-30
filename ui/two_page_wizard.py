@@ -2,11 +2,21 @@ import os
 import tkinter as tk
 from dataclasses import dataclass
 from functools import partial
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk
 from typing import Callable, Optional
+import customtkinter as ctk
 
 import pandas as pd
 from ui.ui_utils import center_window  # keep your existing helper
+
+# Import dialog wrappers
+try:
+    from ui.dialogs import show_error, show_warning, ask_open_filename
+except ImportError:
+    from tkinter import messagebox, filedialog
+    show_error = messagebox.showerror
+    show_warning = messagebox.showwarning
+    ask_open_filename = filedialog.askopenfilename
 
 # Import drag-and-drop support
 try:
@@ -241,7 +251,7 @@ class FileAndSelectionPage(ttk.Frame):
     # ---- File+Preview handling ----
 
     def _choose_file(self):
-        path = filedialog.askopenfilename(
+        path = ask_open_filename(
             title="Select data file",
             filetypes=[("Data files", "*.csv *.tsv *.txt *.xlsx *.xls *.xlsm"), ("All files", "*.*")]
         )
@@ -256,7 +266,7 @@ class FileAndSelectionPage(ttk.Frame):
         try:
             df = load_table(path, has_header=bool(self.has_header.get()))
         except Exception as e:
-            messagebox.showerror("Load Error", str(e), parent=self.winfo_toplevel())
+            show_error("Load Error", str(e), parent=self.winfo_toplevel())
             return
 
         self.df_cache = df
@@ -304,16 +314,16 @@ class FileAndSelectionPage(ttk.Frame):
 
     def validate_ready(self) -> bool:
         if not self.current_path:
-            messagebox.showwarning("Missing File", "Please choose a file.", parent=self.winfo_toplevel())
+            show_warning("Missing File", "Please choose a file.", parent=self.winfo_toplevel())
             return False
         if self.df_cache is None:
-            messagebox.showwarning("Not Loaded", "File is not loaded yet.", parent=self.winfo_toplevel())
+            show_warning("Not Loaded", "File is not loaded yet.", parent=self.winfo_toplevel())
             return False
         if not self.selected_text_col.get():
-            messagebox.showwarning("Select Text Column", "Please select the TEXT column.", parent=self.winfo_toplevel())
+            show_warning("Select Text Column", "Please select the TEXT column.", parent=self.winfo_toplevel())
             return False
         if not self.selected_label_col.get():
-            messagebox.showwarning("Select Label Column", "Please select the LABEL column.", parent=self.winfo_toplevel())
+            show_warning("Select Label Column", "Please select the LABEL column.", parent=self.winfo_toplevel())
             return False
         return True
 
@@ -398,7 +408,7 @@ class TwoPageWizard(tk.Toplevel):
             if text_series is None or label_series is None:
                 return
             if len(text_series) != len(label_series):
-                messagebox.showerror("Length Mismatch",
+                show_error("Length Mismatch",
                                      f"Dataset 1 TEXT length ({len(text_series)}) must match LABEL length ({len(label_series)}).",
                                      parent=self)
                 return
@@ -423,7 +433,7 @@ class TwoPageWizard(tk.Toplevel):
         if text_series is None or label_series is None:
             return None
         if len(text_series) != len(label_series):
-            messagebox.showerror("Length Mismatch",
+            show_error("Length Mismatch",
                                  f"Dataset 2 TEXT length ({len(text_series)}) must match LABEL length ({len(label_series)}).",
                                  parent=self)
             return None
@@ -444,7 +454,7 @@ class TwoPageWizard(tk.Toplevel):
             name2 = f"{base} ({n})"
 
         if self.ds1_text is None or self.ds1_label is None:
-            messagebox.showwarning("Incomplete", "Please complete Page 1 for Dataset 1.", parent=self)
+            show_warning("Incomplete", "Please complete Page 1 for Dataset 1.", parent=self)
             return None
 
         # Build dataframes
@@ -482,7 +492,7 @@ class TwoPageWizard(tk.Toplevel):
             try:
                 close = bool(self._on_finish(result, self))
             except Exception as e:
-                messagebox.showerror("Handler Error", f"An error occurred in the finish handler:\n{e}", parent=self)
+                show_error("Handler Error", f"An error occurred in the finish handler:\n{e}", parent=self)
                 close = False
 
         if close:

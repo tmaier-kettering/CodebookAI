@@ -1,6 +1,15 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
+import customtkinter as ctk
 import pandas as pd
+
+# Import dialog wrappers
+try:
+    from ui.dialogs import show_error, show_info, ask_save_filename
+except ImportError:
+    from tkinter import messagebox, filedialog
+    show_error = messagebox.showerror
+    show_info = messagebox.showinfo
+    ask_save_filename = filedialog.asksaveasfilename
 
 from ui.two_page_wizard import WizardResult, open_two_page_wizard
 
@@ -62,7 +71,7 @@ def reliability_finish_handler(res: WizardResult, win: tk.Toplevel) -> bool:
     kappa = compute_cohens_kappa(merged[res.ds1_name], merged[res.ds2_name]) if num_rows > 0 else float("nan")
 
     default_file = f"agreement_{res.ds1_name}_vs_{res.ds2_name}.xlsx"
-    save_path = filedialog.asksaveasfilename(
+    save_path = ask_save_filename(
         title="Save results (Excel)",
         defaultextension=".xlsx",
         filetypes=[("Excel Workbook", "*.xlsx"), ("All files", "*.*")],
@@ -108,7 +117,7 @@ def reliability_finish_handler(res: WizardResult, win: tk.Toplevel) -> bool:
         return True
 
     except Exception as e:
-        messagebox.showerror("Save Error", f"Failed to save Excel file:\n{e}", parent=win)
+        show_error("Save Error", f"Failed to save Excel file:\n{e}", parent=win)
         return False  # keep wizard open so the user can try again
 
 

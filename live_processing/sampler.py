@@ -1,7 +1,19 @@
 import os
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk
 from typing import Optional
+import customtkinter as ctk
+
+# Import dialog wrappers
+try:
+    from ui.dialogs import show_error, show_info, show_warning, ask_open_filename, ask_save_filename
+except ImportError:
+    from tkinter import messagebox, filedialog
+    show_error = messagebox.showerror
+    show_info = messagebox.showinfo
+    show_warning = messagebox.showwarning
+    ask_open_filename = filedialog.askopenfilename
+    ask_save_filename = filedialog.asksaveasfilename
 
 # Import drag-and-drop support
 try:
@@ -95,7 +107,7 @@ def _save_dataframe_dialog(df: pd.DataFrame, suggested_name: str = "sampled_data
     Ask user where/how to save. Supports CSV and Excel (xlsx).
     Returns saved path or None if canceled.
     """
-    path = filedialog.asksaveasfilename(
+    path = ask_save_filename(
         title="Save sampled data",
         defaultextension=".csv",
         initialfile=f"{suggested_name}.csv",
@@ -113,7 +125,7 @@ def _save_dataframe_dialog(df: pd.DataFrame, suggested_name: str = "sampled_data
             # default to CSV
             df.to_csv(path, index=False)
     except Exception as e:
-        messagebox.showerror("Save failed", f"Could not save file:\n{e}")
+        show_error("Save failed", f"Could not save file:\n{e}")
         return None
     return path
 
@@ -267,7 +279,7 @@ class ImportSampleDialog(tk.Toplevel):
     # ---------- Event handlers ----------
 
     def _browse_file(self):
-        path = filedialog.askopenfilename(
+        path = ask_open_filename(
             title="Select a data file",
             filetypes=FILE_TYPES,
         )
@@ -284,7 +296,7 @@ class ImportSampleDialog(tk.Toplevel):
         try:
             df = _read_table(self.selected_path, self.var_has_header.get())
         except Exception as e:
-            messagebox.showerror("Read error", f"Could not read file:\n{e}")
+            show_error("Read error", f"Could not read file:\n{e}")
             self.df_full = None
             self._clear_preview()
             self.btn_ok.config(state="disabled")
@@ -378,19 +390,19 @@ class ImportSampleDialog(tk.Toplevel):
 
     def _on_ok(self):
         if self.df_full is None or self.df_full.empty:
-            messagebox.showwarning("No data", "Load a file before continuing.")
+            show_warning("No data", "Load a file before continuing.")
             return
 
         # Validate input again
         mode = self.var_mode.get()
         if mode == "rows":
             if not self._sanitize_rows():
-                messagebox.showerror("Invalid input", "Please enter a non-negative integer for rows.")
+                show_error("Invalid input", "Please enter a non-negative integer for rows.")
                 return
             sample_value = int(self.var_rows.get())
         else:
             if not self._sanitize_percent():
-                messagebox.showerror("Invalid input", "Please enter a percent between 0 and 100.")
+                show_error("Invalid input", "Please enter a percent between 0 and 100.")
                 return
             sample_value = float(self.var_percent.get())
 
@@ -398,14 +410,14 @@ class ImportSampleDialog(tk.Toplevel):
         try:
             sampled = _sample_df(self.df_full, mode, sample_value)
         except Exception as e:
-            messagebox.showerror("Sampling error", f"Could not sample data:\n{e}")
+            show_error("Sampling error", f"Could not sample data:\n{e}")
             return
 
         # Save dialog
         base = os.path.splitext(os.path.basename(self.selected_path or "sampled_data"))[0]
         save_path = _save_dataframe_dialog(sampled, suggested_name=f"{base}_sample")
         if save_path:
-            messagebox.showinfo("Saved", f"Sampled data saved to:\n{save_path}")
+            show_info("Saved", f"Sampled data saved to:\n{save_path}")
             self.destroy()  # close dialog after success
 
     def _on_cancel(self):

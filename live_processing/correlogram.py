@@ -6,6 +6,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import tkinter as tk
+import customtkinter as ctk
+
+# Import dialog wrappers
+try:
+    from ui.dialogs import show_error
+except ImportError:
+    # Replaced with dialog wrapper
+    show_error = messagebox.showerror
 
 # Match your project structure
 from ui.two_page_wizard import WizardResult, open_two_page_wizard
@@ -319,13 +327,13 @@ def open_correlogram_wizard(parent: tk.Misc):
             ds1 = res.ds1_name
             ds2 = res.ds2_name
         except Exception:
-            from tkinter import messagebox
-            messagebox.showerror("Wizard Error", "Unexpected wizard result payload.", parent=host_parent)
+            # Replaced with dialog wrapper
+            show_error("Wizard Error", "Unexpected wizard result payload.", parent=host_parent)
             return False
 
         if "text" not in merged.columns or ds1 not in merged.columns or ds2 not in merged.columns:
-            from tkinter import messagebox
-            messagebox.showerror(
+            # Replaced with dialog wrapper
+            show_error(
                 "Data Error",
                 f"Merged dataframe is missing required columns. Need: 'text', '{ds1}', '{ds2}'.",
                 parent=host_parent
