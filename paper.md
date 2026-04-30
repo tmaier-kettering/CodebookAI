@@ -12,7 +12,6 @@ authors:
     orcid: "YOUR-ORCID-HERE"
     affiliation: "Kettering University"
 date: "2026-04-30"
-bibliography: paper.bib
 ---
 
 ## Summary {#summary}
