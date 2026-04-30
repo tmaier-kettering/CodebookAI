@@ -1,5 +1,5 @@
 ---
-title: 'CodebookAI: LLM-powered deductive coding for qualitative research'
+title: "CodebookAI: LLM-powered deductive coding for qualitative research"
 tags:
   - python
   - qualitative-research
@@ -8,17 +8,11 @@ tags:
   - openai
   - deductive-coding
 authors:
-  - name: Torsten Maier
-    orcid: 0000-0000-0000-0000  # replace with your ORCID
+  - name: "Torsten Maier"
+    orcid: "YOUR-ORCID-HERE"
     affiliation: "Kettering University"
-date: `r Sys.Date()`
-output: rticles::joss_article
-csl: joss.csl
-journal: "Journal of Open Source Software"
-volume: XX
-issue: X
-doi: 10.21105/joss.XXXXX  # placeholder; filled after acceptance
-repository_url: https://github.com/tmaier-kettering/CodebookAI
+date: "2026-04-30"
+bibliography: paper.bib
 ---
 
 ## Summary {#summary}
