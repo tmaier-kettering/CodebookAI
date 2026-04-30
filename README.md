@@ -20,6 +20,31 @@ CodebookAI is a tool designed to assist qualitative researchers in processing la
 
 ---
 
+## Developer Guide
+
+### Running Tests
+
+The repository includes an automated test suite that runs without a live
+OpenAI API key or a graphical display.
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+
+# Run all tests
+pytest
+```
+
+Continuous integration is configured via GitHub Actions (`.github/workflows/tests.yml`)
+and runs on every push and pull request across Python 3.10, 3.11, and 3.12.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for a full guide on setting up a local
+development environment, the project structure, coding conventions, and how to
+submit changes.
+
+---
+
 ## How to Support
 
 [![BuyMeACoffee](./assets/buymeacoffee.png)](https://buymeacoffee.com/professthor)
