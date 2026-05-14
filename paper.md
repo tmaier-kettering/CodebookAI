@@ -10,7 +10,7 @@ tags:
   - inter-rater-reliability
 authors:
   - name: "Torsten Maier"
-    orcid: "0000-0000-0000-0000"
+    orcid: "0000-0003-2538-4592"
     affiliation: 1
 affiliations:
   - name: Kettering University, United States
