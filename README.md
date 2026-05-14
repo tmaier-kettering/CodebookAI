@@ -53,7 +53,7 @@ If you find this tool helpful, consider supporting its development by [buying me
 
 ## License
 
-This project is provided as-is for educational and research purposes. Please ensure compliance with OpenAI's usage policies when using this application.
+This project is licensed under the [MIT License](LICENSE). Please ensure compliance with OpenAI's usage policies when using this application.
 
 ## Disclaimer 
 This application requires an OpenAI API key and will incur costs based on your usage. Batch processing typically offers significant cost savings compared to individual API calls. Please monitor your usage and costs through the OpenAI dashboard.

@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "CodebookAI: LLM-powered deductive coding for qualitative research"
+authors:
+  - family-names: Maier
+    given-names: Torsten
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+    affiliation: "Kettering University"
+repository-code: "https://github.com/tmaier-kettering/CodebookAI"
+license: MIT
+abstract: >
+  CodebookAI is a desktop application that assists qualitative researchers in
+  applying deductive coding at scale using large language models. It provides
+  a graphical interface for single-label and multi-label text classification,
+  keyword extraction, and inter-rater reliability analysis via OpenAI's API.
+keywords:
+  - qualitative-research
+  - deductive-coding
+  - text-classification
+  - large-language-models
+  - openai
+  - inter-rater-reliability
+  - python
+  - tkinter
