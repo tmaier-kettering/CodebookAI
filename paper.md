@@ -19,51 +19,56 @@ date: 30 April 2026
 bibliography: paper.bib
 ---
 
-## Summary
+# Summary
 
 CodebookAI is a desktop application for qualitative researchers that automates deductive coding—the systematic assignment of predefined category labels to text segments—using large language models (LLMs). Researchers in social sciences, education, health sciences, and related disciplines routinely analyze interview transcripts, open-ended survey responses, and similar text by applying codes from a structured codebook [@saldana2021]. This process is labor-intensive when datasets contain hundreds or thousands of segments.
 
-CodebookAI provides a Tkinter-based graphical interface through which researchers upload a codebook (a flat list of category names) and text segments from CSV, TSV, Excel, or Parquet files. The application constructs structured prompts, enforces codebook-fidelity through JSON-schema-constrained outputs validated by Pydantic, and returns coded results as spreadsheets ready for analysis in tools such as R, SPSS, or Excel.
+CodebookAI provides a Tkinter-based graphical interface through which researchers upload a codebook (a flat list of category names) and text segments from CSV, TSV, Excel, or Parquet files. The application constructs structured prompts, enforces codebook fidelity through JSON-schema-constrained outputs validated by Pydantic, and returns coded results as spreadsheets ready for analysis in tools such as R, SPSS, or Excel.
 
-The application supports two processing modes—**batch** and **live**—and four primary workflows:
+The application supports two processing modes—**batch** and **live**—and four primary workflows: single-label classification, multi-label classification, keyword extraction, and inter-rater reliability analysis. A **correlogram** tool visualizes pairwise co-occurrence between two sets of codes as a heatmap, and a **data preparation** module enables stratified random sampling to create representative coding subsets for pilot studies.
 
-1. **Single-label classification**: assign exactly one codebook category to each text segment.
-2. **Multi-label classification**: assign one or more categories to each segment.
-3. **Keyword extraction**: extract free-form keyword lists from text without a predefined codebook.
-4. **Inter-rater reliability analysis**: compute percent agreement and Cohen's kappa [@cohen1960] between two independently coded datasets, with export to Excel.
+# Statement of need
 
-A **correlogram** tool visualizes pairwise co-occurrence between two sets of codes as a heatmap, and a **data preparation** module enables stratified random sampling to create representative coding subsets for pilot studies.
+Deductive qualitative coding is a methodological cornerstone of qualitative content analysis [@mayring2022] and systematic qualitative inquiry more broadly. The process requires trained coders to evaluate each text segment against a codebook, and often involves two or more coders to establish inter-rater reliability. For datasets of several hundred to several thousand items, this represents a substantial investment of researcher time.
 
-## Statement of Need
+CodebookAI addresses this problem by giving researchers a graphical tool that applies LLM-based classification to user-defined codebooks without requiring programming knowledge. It is intended for researchers who need structured, reproducible assistance with coding large collections of text segments while preserving a codebook-driven workflow. The software supports both exploratory pilot work on small samples and large-scale studies involving tens of thousands of segments processed through batch inference.
 
-Deductive qualitative coding is a methodological cornerstone of qualitative content analysis [@mayring2022] and systematic qualitative inquiry more broadly. The process requires trained coders to evaluate each text segment against a codebook, and typically involves two or more coders to establish inter-rater reliability. For datasets of several hundred to several thousand items, this represents a significant investment of researcher time—often weeks per study.
+# State of the field
 
-Existing computational tools address this challenge inadequately. Keyword-matching approaches fail on semantically complex text. Supervised machine-learning pipelines require labeled training data, data-science expertise, and large datasets before they achieve acceptable accuracy. Commercial qualitative data analysis software (e.g., NVivo, ATLAS.ti, MAXQDA) supports manual coding workflows but does not integrate LLM-based classification. General-purpose LLM chat interfaces such as ChatGPT do not provide the structured outputs, batch processing, or codebook integration that systematic research requires.
+Researchers currently have several imperfect options for deductive coding assistance. Manual coding in qualitative data analysis platforms such as NVivo, ATLAS.ti, and MAXQDA supports established research workflows, but these tools are centered on human coding rather than LLM-based automated classification. General-purpose LLM interfaces such as ChatGPT can classify text, but they do not provide integrated codebook management, structured export, batch submission workflows, or built-in reliability analysis suitable for systematic research projects.
 
-LLMs demonstrate strong zero-shot text classification capabilities—assigning labels to previously unseen text without task-specific training. CodebookAI operationalizes this capability in a researcher-facing tool that requires no programming knowledge. It enforces codebook fidelity through a JSON schema derived at runtime from the user-defined codebook, so the model is structurally prevented from producing labels outside the allowed set [@openai2024]. The **batch processing** mode (via OpenAI's Batch API) reduces costs by up to 50% compared to synchronous calls and scales to tens of thousands of segments per job with results typically available within 24 hours. The integrated reliability module closes the qualitative workflow loop by enabling immediate quantitative comparison of LLM-generated codes with human-generated codes.
+Other computational alternatives also have important limitations. Keyword-based approaches are brittle for semantically complex text, especially when categories depend on context rather than explicit vocabulary. Supervised machine-learning approaches can be effective, but they require labeled training data, model development expertise, and a different workflow from the zero-shot or instruction-based classification that LLMs make possible. CodebookAI’s contribution is to bridge this gap by combining a researcher-facing desktop interface with structured-output constraints, batch and live processing, spreadsheet-oriented import/export, and post-classification reliability tools in a single application.
+
+# Software design
+
+CodebookAI is implemented as a Tkinter-based desktop application designed for researchers who may not have programming experience but still need transparent and repeatable coding workflows. A central design choice is the separation between the user interface, the prompt-and-schema generation logic, and the API interaction layer. This structure supports both interactive use and testability while allowing the software to expose a simple GUI.
+
+A second major design choice is the use of runtime-generated structured outputs. Rather than allowing the model to return arbitrary free text, CodebookAI builds a Pydantic model from the user-supplied codebook, derives a JSON schema from that model, and uses the schema to constrain outputs from the API [@openai2024]. This design reduces invalid labels and keeps the model aligned with the researcher’s predefined category set.
+
+The software also supports both **live** and **batch** execution modes because these modes serve different research needs. Live mode is useful for smaller jobs and iterative exploration, while batch mode is better suited for large studies where lower cost and higher throughput are more important than immediate responses. Additional modules for inter-rater reliability, correlograms, and random sampling were included so that the application supports more of the end-to-end research workflow rather than limiting itself to a single classification step.
 
 ## Functionality
 
-Users launch CodebookAI without installing dependencies beyond the single-file Windows executable (or a standard `pip install` for source users). After entering an OpenAI API key in **File → Settings**, the workflow proceeds as follows:
+Users launch CodebookAI without installing dependencies beyond the single-file Windows executable, or alternatively from source in a standard Python environment. After entering an OpenAI API key in **File → Settings**, the workflow proceeds through data import, codebook selection, model execution, and export of results.
 
-**Classification (batch or live).** A file import wizard accepts CSV, TSV, Excel, and Parquet files. The user selects the column containing text segments; a second import selects the column containing codebook labels. CodebookAI builds a Pydantic model at runtime that treats the label list as a strict enumeration, derives a JSON schema from it, and passes the schema to the OpenAI API as a structured-output constraint. In batch mode, all requests are bundled into a single JSONL file and submitted to OpenAI's Batch API; the main window displays job status and allows one-click result retrieval. In live mode, segments are classified sequentially with a progress bar. Results are exported as CSV.
+For classification, a file import wizard accepts CSV, TSV, Excel, and Parquet files. The user selects the column containing text segments and imports a codebook as a flat list of labels. CodebookAI builds a Pydantic model at runtime that treats the label list as a strict enumeration, derives a JSON schema from it, and passes the schema to the API as a structured-output constraint. In batch mode, requests are bundled into a JSONL file and submitted through OpenAI’s Batch API; in live mode, segments are classified sequentially with progress reporting. Results are exported as CSV.
 
-**Multi-label classification** follows the same workflow but uses an array-typed JSON schema, requiring at least one label per segment.
+The same general workflow supports **multi-label classification** and **keyword extraction**, while the **inter-rater reliability** module compares two coded datasets and computes matched rows, percent agreement, and Cohen’s kappa [@cohen1960], exporting results to Excel. The **correlogram** tool visualizes cross-dataset code relationships as a heatmap, and the **data preparation** module supports random sampling to create pilot subsets before running full-scale coding jobs.
 
-**Keyword extraction** submits each text segment with a prompt requesting a list of key terms, returning results in the same batch or live modes.
+# Research impact statement
 
-**Reliability analysis.** The inter-rater reliability module accepts two coded datasets and joins them on a shared text column. It computes the number of matched rows, percent agreement, and Cohen's kappa over the union of label sets, then exports a two-sheet Excel workbook with summary statistics and per-row agreement flags.
+CodebookAI has already been used to support published research. In particular, the software was used in the study *Examining the Reliability of ChatGPT: A Quantitative Comparison of Human and LLM Emotion Classification*, published through the American Society for Engineering Education (ASEE) proceedings, which investigated the reliability of large language models in an emotion-classification task [@asee2025]. This provides direct evidence that the software has moved beyond a prototype and has already supported an actual research workflow and scholarly output.
 
-**Correlogram.** Given two coded datasets, this tool computes a cross-tabulation matrix between the label columns and renders it as a customizable heatmap (with options for row, column, or global normalization, colormap selection, and cell annotation).
+The software is designed to be useful in additional research settings where investigators need to classify large collections of open-ended text with a predefined codebook and then evaluate agreement or downstream patterns. Its support for spreadsheet-based inputs and outputs, structured classification constraints, and integrated reliability analysis lowers the practical barrier for researchers who want to incorporate LLM-assisted coding into empirical studies without building custom software pipelines.
 
-**Data preparation.** A random sampler draws a user-specified number of rows from any imported dataset, enabling researchers to create pilot subsets before committing to full-dataset API costs.
+# AI usage disclosure
 
-## AI Usage Disclosure
+GitHub Copilot was used extensively during software development, generating the majority of front-end code and portions of the back-end implementation. The core classification logic, structured-output schema generation, and overall architecture were authored by the human developer. All Copilot-generated code was reviewed, validated, debugged, and integrated by the human author, who takes full responsibility for the software's correctness, licensing, and performance.
 
-GitHub Copilot was used extensively during software development, generating the majority of front-end code and portions of the back-end implementation. The core classification logic, structured-output schema generation, and overall architecture were authored by the human developer. All Copilot-generated code was reviewed, validated, debugged, and integrated by the human author, who takes full responsibility for the software's correctness, licensing, and performance. GitHub Copilot was also used to generate automated tests, CI workflows, and the `CONTRIBUTING.md` file. All AI-generated content was reviewed and substantially revised for accuracy by the author.
+GitHub Copilot was also used to generate automated tests, CI workflows, and the `CONTRIBUTING.md` file. All AI-generated content was reviewed and substantially revised for accuracy by the author.
 
-## Acknowledgments
+# Acknowledgments
 
 The author thanks the students and research collaborators at Kettering University whose qualitative research needs motivated the development of this tool.
 
-## References
+# References
