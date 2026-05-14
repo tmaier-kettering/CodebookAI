@@ -36,7 +36,7 @@ A **correlogram** tool visualizes pairwise co-occurrence between two sets of cod
 
 ## Statement of Need
 
-Deductive qualitative coding is a methodological cornerstone of qualitative content analysis [@mayring2000] and systematic qualitative inquiry more broadly. The process requires trained coders to evaluate each text segment against a codebook, and typically involves two or more coders to establish inter-rater reliability. For datasets of several hundred to several thousand items, this represents a significant investment of researcher time—often weeks per study.
+Deductive qualitative coding is a methodological cornerstone of qualitative content analysis [@mayring2022] and systematic qualitative inquiry more broadly. The process requires trained coders to evaluate each text segment against a codebook, and typically involves two or more coders to establish inter-rater reliability. For datasets of several hundred to several thousand items, this represents a significant investment of researcher time—often weeks per study.
 
 Existing computational tools address this challenge inadequately. Keyword-matching approaches fail on semantically complex text. Supervised machine-learning pipelines require labeled training data, data-science expertise, and large datasets before they achieve acceptable accuracy. Commercial qualitative data analysis software (e.g., NVivo, ATLAS.ti, MAXQDA) supports manual coding workflows but does not integrate LLM-based classification. General-purpose LLM chat interfaces such as ChatGPT do not provide the structured outputs, batch processing, or codebook integration that systematic research requires.
 
