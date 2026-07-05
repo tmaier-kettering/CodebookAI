@@ -11,7 +11,6 @@ import io, json
 from enum import Enum
 from io import BytesIO
 from typing import Optional, List
-import tkinter as tk
 from pydantic import BaseModel, ConfigDict, Field
 
 from file_handling.data_conversion import make_str_enum
@@ -108,7 +107,7 @@ def generate_multi_label_batch(labels, quotes) -> BytesIO | None:
     labels_enum = make_str_enum("Label", labels)
 
     class LabeledQuoteMulti(BaseModel):
-        label: List[labels_enum] = Field(..., min_items=1)
+        label: List[labels_enum] = Field(..., min_length=1)
         model_config = ConfigDict(use_enum_values=True, extra='forbid')
 
     SCHEMA = LabeledQuoteMulti.model_json_schema()
@@ -156,7 +155,7 @@ def generate_keyword_extraction_batch(texts) -> BytesIO | None:
     Returns a BytesIO whose .name is set to 'batchinput.jsonl'.
     """
     class KeywordExtraction(BaseModel):
-        keywords: list[str] = Field(..., min_items=1)
+        keywords: list[str] = Field(..., min_length=1)
         model_config = ConfigDict(extra='forbid')
 
     SCHEMA = KeywordExtraction.model_json_schema()

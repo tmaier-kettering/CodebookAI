@@ -8,22 +8,15 @@ This is useful for smaller datasets or when immediate results are needed.
 
 from typing import Optional
 import tkinter as tk
+from tkinter import messagebox
 from pydantic import BaseModel, ValidationError, Field, ConfigDict
-from openai import OpenAI
 from file_handling.data_import import import_data
 from file_handling.data_conversion import save_as_csv, to_long_df
-from settings import secrets_store, config
+from settings import config
+from batch_processing.batch_method import get_client
 
 # Progress UI lives in a separate module
 from ui.progress_ui import ProgressController
-
-# Initialize OpenAI client with stored API key
-try:
-    OPENAI_API_KEY = secrets_store.load_api_key()
-    client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
-except Exception:
-    OPENAI_API_KEY = None
-    client = None
 
 
 def keyword_extraction_pipeline(parent: Optional[tk.Misc] = None):
@@ -31,6 +24,12 @@ def keyword_extraction_pipeline(parent: Optional[tk.Misc] = None):
     Prompt for quotes CSVs, extract keywords from each quote,
     show progress, then save results to CSV.
     """
+    try:
+        client = get_client()
+    except Exception as e:
+        messagebox.showerror("API Key Required", str(e))
+        return
+
     # Get quotes data
     from_import = import_data(parent, "Select the quotes data")
     if from_import is None:
@@ -40,7 +39,7 @@ def keyword_extraction_pipeline(parent: Optional[tk.Misc] = None):
     class KeywordExtraction(BaseModel):
         id: int | None = None
         quote: str
-        keywords: list[str] = Field(..., min_items=1)
+        keywords: list[str] = Field(..., min_length=1)
         model_config = ConfigDict()
 
     total = len(quotes)

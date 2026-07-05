@@ -360,17 +360,6 @@ def import_data(
         _fill_preview_rows([[""] * 5 for _ in range(5)])
         _update_dataset_name_preview()
 
-    def _current_header_labels() -> list[str]:
-        # Return the labels currently shown atop the preview
-        return [tree.heading(cid)["text"] for cid in tree["columns"]]
-
-    def _selected_header_label() -> str:
-        labels = _current_header_labels()
-        idx = selected_col.get()
-        if 0 <= idx < len(labels):
-            return str(labels[idx])
-        return ""
-
     def _update_dataset_name_controls_enabled():
         # Enable/disable "selected column header" radio based on has_headers + data present
         has_data = bool(_loaded_rows)
