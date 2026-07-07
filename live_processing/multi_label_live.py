@@ -8,22 +8,15 @@ This is useful for smaller datasets or when immediate results are needed.
 
 from typing import Optional, List
 import tkinter as tk
+from tkinter import messagebox
 from pydantic import BaseModel, ValidationError, Field, ConfigDict
-from openai import OpenAI
 from file_handling.data_import import import_data
 from file_handling.data_conversion import make_str_enum, save_as_csv, to_long_df
-from settings import secrets_store, config
+from settings import config
+from batch_processing.batch_method import get_client
 
 # Progress UI lives in a separate module
 from ui.progress_ui import ProgressController
-
-# Initialize OpenAI client with stored API key
-try:
-    OPENAI_API_KEY = secrets_store.load_api_key()
-    client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
-except Exception:
-    OPENAI_API_KEY = None
-    client = None
 
 
 def multi_label_pipeline(parent: Optional[tk.Misc] = None):
@@ -31,6 +24,12 @@ def multi_label_pipeline(parent: Optional[tk.Misc] = None):
     Prompt for labels/quotes CSVs, classify each quote with 1+ labels,
     show progress, then save results to CSV.
     """
+    try:
+        client = get_client()
+    except Exception as e:
+        messagebox.showerror("API Key Required", str(e))
+        return
+
     # Get labels data
     from_import = import_data(parent, "Select the labels data")
     if from_import is None:
@@ -47,7 +46,7 @@ def multi_label_pipeline(parent: Optional[tk.Misc] = None):
     class LabeledQuoteMulti(BaseModel):
         id: int | None = None
         quote: str
-        label: List[labels] = Field(..., min_items=1)
+        label: List[labels] = Field(..., min_length=1)
         model_config = ConfigDict(use_enum_values=True, extra='forbid')
 
     total = len(quotes)

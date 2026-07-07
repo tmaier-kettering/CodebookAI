@@ -92,7 +92,12 @@ def build_ui(root: tk.Tk) -> None:
         root: The main Tkinter window to build the UI in
     """
     root.title(APP_TITLE)
-    root.iconbitmap(asset_path("app.ico"))
+    try:
+        # .ico files are only natively supported by iconbitmap on Windows;
+        # this raises TclError on Linux/macOS Tk builds.
+        root.iconbitmap(asset_path("app.ico"))
+    except tk.TclError:
+        pass
 
     # ===== Top-level grid: header, spacer, table area =====
     root.columnconfigure(0, weight=1)
