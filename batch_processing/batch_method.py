@@ -10,6 +10,7 @@ import json
 from batch_processing.batch_error_handling import handle_batch_fail
 from file_handling.data_conversion import to_long_df, save_as_csv, join_datasets
 from file_handling.data_import import import_data
+from prompt_editor.engine import load_prompt_editor_batch_results
 from settings import config, secrets_store
 from settings.user_config import get_setting
 from openai import OpenAI
@@ -179,6 +180,11 @@ def get_batch_results(batch_id: str) -> None:
         Results are automatically saved as a DataFrame with columns for
         quote, label, and confidence from the classification response.
     """
+    prompt_editor_df = load_prompt_editor_batch_results(batch_id)
+    if prompt_editor_df is not None:
+        save_as_csv(prompt_editor_df)
+        return
+
     client = get_client()
     status = get_batch_status(batch_id)
 

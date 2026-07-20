@@ -16,6 +16,7 @@ Public API:
 from __future__ import annotations
 
 import csv
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Optional, Sequence, Tuple, List
 
@@ -200,7 +201,7 @@ class _RadioHeader(ttk.Frame):
 # -----------------------------
 # Public API: Import Wizard
 # -----------------------------
-def import_data(
+def import_tabular_data(
     parent: Optional[tk.Misc] = None,
     title: str = "Import Data",
     filetypes: Sequence[tuple[str, str]] = (
@@ -210,7 +211,7 @@ def import_data(
         ("TSV files", "*.tsv"),
         ("Text files", "*.txt"),
     ),
-) -> Optional[tuple[list[str], str]]:
+) -> Optional[ImportedDataset]:
     """
     Open an "Import Wizard" dialog: select a file, preview it, choose 'has headers',
     pick exactly one column via radio buttons, choose a dataset name, and return that
@@ -447,11 +448,10 @@ def import_data(
     _initial_blank_preview()  # start 5x5
 
     # -------------- Import handler --------------
-    result_values: Optional[list[str]] = None
-    result_dataset_name: Optional[str] = None
+    result_dataset: Optional[ImportedDataset] = None
 
     def _do_import():
-        nonlocal result_values, result_dataset_name
+        nonlocal result_dataset
         path = file_var.get().strip()
         if not path:
             messagebox.showerror("Error", "No file selected.", parent=dlg)
@@ -464,16 +464,15 @@ def import_data(
             messagebox.showerror("Load error", str(e), parent=dlg)
             return
 
-        body = rows[1:] if (has_headers.get() and rows) else rows
+        header, body = normalize_tabular_rows(rows, has_headers.get())
         if not body:
             messagebox.showerror("Error", "The file appears to have no data rows.", parent=dlg)
             return
 
         col_idx = selected_col.get()
-        out: list[str] = []
-        for r in body:
-            val = r[col_idx] if col_idx < len(r) else ""
-            out.append("" if val is None else str(val))
+        if col_idx >= len(header):
+            messagebox.showerror("Error", "Selected column is out of range for the imported file.", parent=dlg)
+            return
 
         # Resolve dataset_name
         mode = dataset_name_mode.get()
@@ -493,8 +492,15 @@ def import_data(
                 messagebox.showerror("Dataset Name error", "Please type a dataset_name in the 'Other' field.", parent=dlg)
                 return
 
-        result_values = out
-        result_dataset_name = dataset_name
+        result_dataset = ImportedDataset(
+            file_path=path,
+            dataset_name=dataset_name,
+            has_headers=has_headers.get(),
+            selected_column_index=col_idx,
+            selected_column_name=header[col_idx],
+            columns=header,
+            rows=rows_to_records(header, body),
+        )
         dlg.destroy()
 
     process_btn.configure(command=_do_import)
@@ -513,6 +519,64 @@ def import_data(
     owner.wait_window(dlg)
     _safe_destroy(created_root)
 
-    if result_values is None or result_dataset_name is None:
+    return result_dataset
+
+
+def import_data(
+    parent: Optional[tk.Misc] = None,
+    title: str = "Import Data",
+    filetypes: Sequence[tuple[str, str]] = (
+        ("All files", "*.*"),
+        ("Excel files", "*.xlsx *.xls"),
+        ("CSV files", "*.csv"),
+        ("TSV files", "*.tsv"),
+        ("Text files", "*.txt"),
+    ),
+) -> Optional[tuple[list[str], str]]:
+    imported = import_tabular_data(parent=parent, title=title, filetypes=filetypes)
+    if imported is None:
         return None
-    return result_values, result_dataset_name
+    return imported.selected_values, imported.dataset_name
+@dataclass
+class ImportedDataset:
+    file_path: str
+    dataset_name: str
+    has_headers: bool
+    selected_column_index: int
+    selected_column_name: str
+    columns: list[str]
+    rows: list[dict[str, str]]
+
+    @property
+    def selected_values(self) -> list[str]:
+        return [row.get(self.selected_column_name, "") for row in self.rows]
+
+
+def normalize_tabular_rows(rows: list[list[str]], has_headers: bool) -> tuple[list[str], list[list[str]]]:
+    if rows:
+        if has_headers:
+            header = rows[0]
+            body = rows[1:]
+        else:
+            max_cols = max((len(r) for r in rows), default=1)
+            header = [f"Column {i+1}" for i in range(max_cols)]
+            body = rows
+    else:
+        header, body = [f"Column {i+1}" for i in range(5)], []
+
+    normalized_header = [
+        str(h) if (h is not None and str(h).strip() != "") else f"Column {i+1}"
+        for i, h in enumerate(header)
+    ]
+    return normalized_header, body
+
+
+def rows_to_records(columns: Sequence[str], rows: Sequence[Sequence[str]]) -> list[dict[str, str]]:
+    records: list[dict[str, str]] = []
+    for row in rows:
+        record: dict[str, str] = {}
+        for idx, column in enumerate(columns):
+            value = row[idx] if idx < len(row) else ""
+            record[column] = "" if value is None else str(value)
+        records.append(record)
+    return records

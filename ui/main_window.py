@@ -2,18 +2,12 @@
 Main window GUI for CodebookAI text classification application.
 
 This module provides the primary user interface for the CodebookAI application,
-including batch job management, live processing controls, and settings access.
+including batch job management, prompt-editor controls, and settings access.
 The interface displays ongoing and completed batch jobs in tabbed tables.
 
 Updated per request:
 - Removed add_btn, tools_btn, and settings_btn (refresh button retained).
-- Added a top menu bar with the following structure:
-  File > Settings, Exit
-  Data Prep > Sample
-  LLM Tools > Live Methods > Single Label Text Classification, Multi-Label Text Classification, Text Extraction
-            > Batch Methods > Single Label Text Classification
-  Data Analysis > Reliability Statistics
-  Help > Github Repo
+- Added a top menu bar with prompt-editor access and built-in presets.
 - Added a "Batches" title above the table area at the bottom of the page.
 """
 
@@ -27,6 +21,12 @@ from asset_path import asset_path
 from live_processing.correlogram import open_correlogram_wizard
 from live_processing.reliability_calculator import open_reliability_wizard
 from live_processing.sampler import sample_data
+from prompt_editor.presets import (
+    KEYWORD_EXTRACTION_PRESET_ID,
+    MULTI_LABEL_PRESET_ID,
+    SINGLE_LABEL_PRESET_ID,
+)
+from prompt_editor.ui import open_prompt_editor
 
 # Handle imports based on how the script is run
 try:
@@ -35,7 +35,6 @@ try:
     from ui_utils import center_window
     from ui_helpers import make_tab_with_tree, popup_menu, popup_menu_below_widget
     from batch_operations import (
-        call_batch_async,
         refresh_batches_async,
         call_batch_download_async,
         cancel_batch_async,
@@ -46,25 +45,10 @@ except ImportError:  # fallback when running as a package (ui.*)
     from ui.ui_utils import center_window
     from ui.ui_helpers import make_tab_with_tree, popup_menu, popup_menu_below_widget
     from ui.batch_operations import (
-        call_batch_async,
         refresh_batches_async,
         call_batch_download_async,
         cancel_batch_async,
     )
-
-# Ensure live modules can be imported when run directly
-try:
-    import live_processing.multi_label_live
-    import live_processing.single_label_live
-    import live_processing.keyword_extraction_live
-except ImportError:
-    import sys
-    import os
-
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    import live_processing.multi_label_live
-    import live_processing.single_label_live
-    import live_processing.keyword_extraction_live
 
 APP_TITLE = "CodebookAI"
 APP_SUBTITLE = "A qualitative research tool based on OpenAI's Playground API."
@@ -135,46 +119,24 @@ def build_ui(root: tk.Tk) -> None:
     data_prep_menu.add_command(label="Sample", command=lambda: sample_data(root))
     menubar.add_cascade(label="Data Prep", menu=data_prep_menu)
 
-    # LLM Tools > Live Methods / Batch Methods
+    # LLM Tools
     llm_tools_menu = tk.Menu(menubar, tearoff=False)
+    llm_tools_menu.add_command(label="Prompt Editor", command=lambda: open_prompt_editor(root))
 
-    # Live Methods submenu
-    live_methods_menu = tk.Menu(llm_tools_menu, tearoff=False)
-
-    def _single_label_live_call():
-        live_processing.single_label_live.single_label_pipeline(root)
-
-    def _multi_label_live_call():
-        live_processing.multi_label_live.multi_label_pipeline(root)
-
-    def _keyword_extraction_live_call():
-        live_processing.keyword_extraction_live.keyword_extraction_pipeline(root)
-
-    live_methods_menu.add_command(
-        label="Single Label Text Classification", command=_single_label_live_call
+    presets_menu = tk.Menu(llm_tools_menu, tearoff=False)
+    presets_menu.add_command(
+        label="Single Label Classification",
+        command=lambda: open_prompt_editor(root, preset_id=SINGLE_LABEL_PRESET_ID),
     )
-    live_methods_menu.add_command(
-        label="Multi-Label Text Classification", command=_multi_label_live_call
+    presets_menu.add_command(
+        label="Multi-Label Classification",
+        command=lambda: open_prompt_editor(root, preset_id=MULTI_LABEL_PRESET_ID),
     )
-    live_methods_menu.add_command(label="Keyword Extraction", command=_keyword_extraction_live_call)
-
-    # Batch Methods submenu
-    batch_methods_menu = tk.Menu(llm_tools_menu, tearoff=False)
-    batch_methods_menu.add_command(
-        label="Single Label Text Classification",
-        command=lambda: call_batch_async(root, type="single_label"),
-    )
-    batch_methods_menu.add_command(
-        label="Multi-Label Text Classification",
-        command=lambda: call_batch_async(root, type="multi_label"),
-    )
-    batch_methods_menu.add_command(
+    presets_menu.add_command(
         label="Keyword Extraction",
-        command=lambda: call_batch_async(root, type="keyword_extraction"),
+        command=lambda: open_prompt_editor(root, preset_id=KEYWORD_EXTRACTION_PRESET_ID),
     )
-
-    llm_tools_menu.add_cascade(label="Live Methods", menu=live_methods_menu)
-    llm_tools_menu.add_cascade(label="Batch Methods", menu=batch_methods_menu)
+    llm_tools_menu.add_cascade(label="Built-in Presets", menu=presets_menu)
     menubar.add_cascade(label="LLM Tools", menu=llm_tools_menu)
 
     # Data Analysis
