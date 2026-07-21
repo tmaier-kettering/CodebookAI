@@ -1,194 +1,62 @@
 """
-JSON schema handling and batch file generation for OpenAI text classification.
+JSONL batch file generation for OpenAI Structured Outputs requests.
 
-This module provides utilities for creating JSON schemas that enforce structured
-responses from OpenAI models, and for generating JSONL batch files for processing
-multiple text classification requests efficiently.
+This used to be three near-identical functions (generate_single_label_batch,
+generate_multi_label_batch, generate_keyword_extraction_batch), each with its
+own hardcoded prompt and Pydantic model. They're now one function driven by a
+core.task.Task -- the prompt, the constant/per-row split, and the output
+schema all come from the task instead of being baked in here.
 """
 
 from __future__ import annotations
-import io, json
-from enum import Enum
+
+import io
+import json
 from io import BytesIO
-from typing import Optional, List
-from pydantic import BaseModel, ConfigDict, Field
 
-from file_handling.data_conversion import make_str_enum
-from file_handling.data_import import import_data
-from settings.config import model
+from core.task import Task, build_request_params, build_strict_schema, render_prompt
 
 
-def forbid_additional_props(schema: dict) -> dict:
-    """Recursively set additionalProperties:false on every object schema."""
-    if not isinstance(schema, dict):
-        return schema
-
-    # If this schema node is an object, set additionalProperties: false
-    if schema.get("type") == "object":
-        schema.setdefault("properties", {})
-        schema["additionalProperties"] = False
-
-        # Recurse into each property
-        for prop_schema in schema.get("properties", {}).values():
-            forbid_additional_props(prop_schema)
-
-        # Recurse into patternProperties (rare but safe)
-        for prop_schema in schema.get("patternProperties", {}).values():
-            forbid_additional_props(prop_schema)
-
-    # If it's an array, recurse into "items"
-    if schema.get("type") == "array" and "items" in schema:
-        forbid_additional_props(schema["items"])
-
-    # oneOf/anyOf/allOf branches
-    for key in ("oneOf", "anyOf", "allOf"):
-        if key in schema and isinstance(schema[key], list):
-            for s in schema[key]:
-                forbid_additional_props(s)
-
-    return schema
-
-
-def generate_single_label_batch(labels, quotes) -> BytesIO | None:
+def generate_batch(task: Task, rows: list[dict]) -> BytesIO:
     """
     Create a JSONL batch as bytes, in memory (no disk writes).
-    Returns a BytesIO whose .name is set to 'batchinput.jsonl'.
+    One row -> one request, custom_id = "row-00001", "row-00002", ...
+    (1-based, matching the row order of `rows`).
+
+    Row data itself is NOT sent as request metadata -- OpenAI's metadata has
+    a ~512 char/value limit that arbitrary carried columns could exceed.
+    Carried columns are rejoined locally by row position after download
+    (see batch_processing.batch_method).
     """
-    labels_enum = make_str_enum("Label", labels)
-
-    class LabeledQuote(BaseModel):
-        label: labels_enum  # STRICT: must be one of labels
-        model_config = ConfigDict(use_enum_values=True, extra='forbid')
-
-    SCHEMA = LabeledQuote.model_json_schema()
-    STRICT_SCHEMA = forbid_additional_props(SCHEMA)
+    schema = build_strict_schema(task)
+    request_params = build_request_params(task)
 
     buf = io.BytesIO()
-    # Give the buffer a filename so the API knows its type
     buf.name = "batchinput.jsonl"
 
-    lines = []
-    for i, q in enumerate(quotes, 1):
-        lines.append({
-            "custom_id": f"quote-{i:05d}",
+    for i, row in enumerate(rows, 1):
+        messages = []
+        if task.system:
+            messages.append({"role": "system", "content": render_prompt(task, row, text=task.system)})
+        messages.append({"role": "user", "content": render_prompt(task, row)})
+
+        line = {
+            "custom_id": f"row-{i:05d}",
             "method": "POST",
             "url": "/v1/responses",
             "body": {
-                "model": model,
-                "input": [
-                    {"role": "user",
-                     "content": f"Label this quote with exactly one label from the allowed set.\n"
-                            f"Allowed: {', '.join(labels)}\nQuote: {q}"}
-                ],
+                "input": messages,
                 "text": {
                     "format": {
                         "type": "json_schema",
-                        "name": "LabeledQuote",
-                        "schema": STRICT_SCHEMA,
-                        "strict": True
+                        "name": "TaskOutput",
+                        "schema": schema,
+                        "strict": True,
                     }
                 },
-                "metadata": {"quote": q}
-            }
-        })
-
-    for line in lines:
-        buf.write((json.dumps(line, ensure_ascii=False) + "\n").encode("utf-8"))
-
-    buf.seek(0)
-    return buf
-
-
-def generate_multi_label_batch(labels, quotes) -> BytesIO | None:
-    """
-    Create a JSONL batch as bytes, in memory (no disk writes).
-    Returns a BytesIO whose .name is set to 'batchinput.jsonl'.
-    """
-    labels_enum = make_str_enum("Label", labels)
-
-    class LabeledQuoteMulti(BaseModel):
-        label: List[labels_enum] = Field(..., min_length=1)
-        model_config = ConfigDict(use_enum_values=True, extra='forbid')
-
-    SCHEMA = LabeledQuoteMulti.model_json_schema()
-    STRICT_SCHEMA = forbid_additional_props(SCHEMA)
-
-    buf = io.BytesIO()
-    # Give the buffer a filename so the API knows its type
-    buf.name = "batchinput.jsonl"
-
-    lines = []
-    for i, q in enumerate(quotes, 1):
-        lines.append({
-            "custom_id": f"quote-{i:05d}",
-            "method": "POST",
-            "url": "/v1/responses",
-            "body": {
-                "model": model,
-                "input": [
-                    {"role": "user",
-                     "content": "Label this quote with labels from the allowed set only. \n"
-                            f"Allowed: {', '.join(labels)}\nQuote: {q}"}
-                ],
-                "text": {
-                    "format": {
-                        "type": "json_schema",
-                        "name": "LabeledQuoteMulti",
-                        "schema": STRICT_SCHEMA,
-                        "strict": True
-                    }
-                },
-                "metadata": {"quote": q}
-            }
-        })
-
-    for line in lines:
-        buf.write((json.dumps(line, ensure_ascii=False) + "\n").encode("utf-8"))
-
-    buf.seek(0)
-    return buf
-
-
-def generate_keyword_extraction_batch(texts) -> BytesIO | None:
-    """
-    Create a JSONL batch as bytes, in memory (no disk writes).
-    Returns a BytesIO whose .name is set to 'batchinput.jsonl'.
-    """
-    class KeywordExtraction(BaseModel):
-        keywords: list[str] = Field(..., min_length=1)
-        model_config = ConfigDict(extra='forbid')
-
-    SCHEMA = KeywordExtraction.model_json_schema()
-    STRICT_SCHEMA = forbid_additional_props(SCHEMA)
-
-    buf = io.BytesIO()
-    # Give the buffer a filename so the API knows its type
-    buf.name = "batchinput.jsonl"
-
-    lines = []
-    for i, txt in enumerate(texts, 1):
-        lines.append({
-            "custom_id": f"text-{i:05d}",
-            "method": "POST",
-            "url": "/v1/responses",
-            "body": {
-                "model": model,
-                "input": [{"role": "system", "content": "You are an expert at structured data extraction."},
-                    {"role": "user", "content": f"Extract the keywords from this text: {txt}"}
-                ],
-                "text": {
-                    "format": {
-                        "type": "json_schema",
-                        "name": "KeywordExtraction",
-                        "schema": STRICT_SCHEMA,
-                        "strict": True
-                    }
-                },
-                "metadata": {"quote": txt}
-            }
-        })
-
-    for line in lines:
+                **request_params,
+            },
+        }
         buf.write((json.dumps(line, ensure_ascii=False) + "\n").encode("utf-8"))
 
     buf.seek(0)

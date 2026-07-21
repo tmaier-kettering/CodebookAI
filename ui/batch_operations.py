@@ -13,35 +13,11 @@ from tkinter import messagebox
 # Handle imports based on how the script is run
 try:
     from batch_processing import batch_method
-    from batch_processing.batch_method import list_batches
-    from ui.ui_utils import populate_treeview
 except ImportError:
     import sys
     import os
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from batch_processing import batch_method
-    from batch_processing.batch_method import list_batches
-    from ui.ui_utils import populate_treeview
-
-
-def call_batch_async(parent: tk.Tk, type) -> None:
-    """
-    Start a new batch processing job on a background thread.
-
-    This function launches the batch creation process in a separate thread
-    to prevent the UI from freezing during file selection and API calls.
-
-    Args:
-        parent: Parent Tkinter window for error dialog ownership
-    """
-    def _worker():
-        try:
-            result = batch_method.send_batch(parent, type)
-            refresh_batches_async(parent)
-            parent.after(0, lambda: print("batch_method finished:", result))
-        except Exception as error:
-            parent.after(0, lambda: messagebox.showerror("Batch Error", str(error)))
-    threading.Thread(target=_worker, daemon=True).start()
 
 
 def call_batch_download_async(parent: tk.Tk, batch_id: str) -> None:
@@ -59,26 +35,34 @@ def call_batch_download_async(parent: tk.Tk, batch_id: str) -> None:
 
 def refresh_batches_async(parent: tk.Tk) -> None:
     """
-    Refresh the batch job lists on a background thread.
+    Refresh the batches table.
 
-    This function fetches the latest batch job status from OpenAI and
-    updates both the ongoing and completed batch tables.
+    Thin shim to the panel's own refresh (ui/batches_view.py owns the fetch
+    thread and rendering now); kept so existing call sites (e.g. after a
+    batch submission) don't need to know about the panel directly.
 
     Args:
-        parent: Parent Tkinter window containing the batch tables
+        parent: The main window, which holds `.batches_panel`
+    """
+    parent.batches_panel.refresh()
+
+
+def rerun_batch_async(parent: tk.Tk, batch_id: str, count: int) -> None:
+    """
+    Resubmit a batch with identical settings `count` times, on a background
+    thread, then refresh the batches table.
+
+    Args:
+        parent: The main window, which holds `.batches_panel`
+        batch_id: The batch to rerun
+        count: How many times to resubmit
     """
     def _worker():
         try:
-            ongoing_batches, done_batches = list_batches()
-
-            def _update_ui():
-                cols = ("id", "status", "created_at", "model", "type", "dataset(s)")
-                populate_treeview(parent.tree_ongoing, cols, ongoing_batches)
-                populate_treeview(parent.tree_done, cols, done_batches)
-
-            parent.after(0, _update_ui)
+            batch_method.rerun_batch(batch_id, count)
+            parent.after(0, parent.batches_panel.refresh)
         except Exception as error:
-            parent.after(0, partial(messagebox.showerror, "Refresh Error", str(error)))
+            parent.after(0, partial(messagebox.showerror, "Rerun Error", str(error)))
     threading.Thread(target=_worker, daemon=True).start()
 
 

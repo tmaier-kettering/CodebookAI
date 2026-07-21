@@ -1,9 +1,7 @@
-# Live Methods
+# Live Methods (moved)
 
-## Tools
+The separate Single-Label / Multi-Label / Keyword Extraction live tools have been replaced by the **Task Builder**, where you build one task and choose "Run Live" to run it synchronously with immediate results.
 
-- [Single Label Classification](./SingleLabelClassification.md) - Tool for classifying text data into one of several predefined categories using a language model.
-- [Multi-Label Classification](./MultiLabelClassification.md) - Tool for classifying text data into one or more of several predefined categories using a language model.
-- [Keyword Extraction](./KeywordExtraction.md) - Tool for extracting key phrases or terms from text data using a language model.
+See [LLM Tools](../LLMTools.md) for the current workflow. The old presets (LLM Tools > Presets) still give you the same starting points, but now as an editable prompt instead of a fixed tool.
 
 ---

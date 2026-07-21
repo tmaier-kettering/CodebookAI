@@ -123,6 +123,32 @@ def _read_text_table(path: str, max_rows: int | None = None) -> list[list[str]]:
         raise RuntimeError(f"Failed to read delimited text: {e}")
 
 
+def load_table(path: str, has_headers: bool = True) -> tuple[list[str], list[list[str]]]:
+    """
+    Load an entire table (not a single column) for the Task Builder: every
+    column becomes available as a placeholder/carry candidate, rather than
+    forcing a separate import per column like the old single-column wizard.
+
+    Returns (column_names, data_rows), reusing the same header-normalization
+    logic as the single-column import wizard (blank/missing headers become
+    "Column N").
+    """
+    rows = _load_tabular(path)
+    if not rows:
+        return [], []
+    if has_headers:
+        raw_header, data = rows[0], rows[1:]
+    else:
+        max_cols = max((len(r) for r in rows), default=1)
+        raw_header, data = [f"Column {i + 1}" for i in range(max_cols)], rows
+
+    header = [
+        str(h) if (h is not None and str(h).strip() != "") else f"Column {i + 1}"
+        for i, h in enumerate(raw_header)
+    ]
+    return header, data
+
+
 def _load_tabular(path: str, max_rows: int | None = None) -> list[list[str]]:
     if _is_excel(path):
         return _read_excel(path, max_rows=max_rows)
