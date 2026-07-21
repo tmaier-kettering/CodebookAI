@@ -1,7 +1,7 @@
 
 ![CodebookAI Logo](./assets/BannerNarrow.png)
 
-CodebookAI is a tool designed to assist qualitative researchers in processing large datasets through OpenAI's GPT models (e.g., 4o, 5, o3, etc.). It enables batch processing of text snippets against a set of labels, significantly reducing the cost and time associated with manual coding, as well as a variety of other tools aimed at qualitative data preparation and analysis. 
+CodebookAI is a tool designed to assist qualitative researchers in processing large datasets through OpenAI's GPT models (e.g., 4o, 5, o3, etc.). Its **Task Builder** lets you write your own prompt against an imported table, define named label Lists that constrain the model's response to on-list values only (no hallucinated or reworded labels to clean up), and choose exactly which columns -- including existing IDs -- carry through to your results. Run a task live for quick results or submit it as a batch for large, cost-effective jobs. The app also includes a variety of other tools aimed at qualitative data preparation and analysis. 
 
 ## Getting Started
 

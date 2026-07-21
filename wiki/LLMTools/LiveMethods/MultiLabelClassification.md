@@ -1,20 +1,7 @@
-# Multi-Label Classification Tool (Live)
+# Multi-Label Classification Tool (Live) -- moved
 
-## Accessing Multi-Label Classification Tool (Live)
-**Navigate**: LLM Tools > Live Methods > Multi-Label Classification
+This fixed tool has been replaced by the **Task Builder**: LLM Tools > Presets > Multi-Label Classification opens the same starting point as an editable prompt, then choose "Run Live" to run it.
 
-## Multi-Label Classification Purpose
-The Multi-Label Classification tool allows you to classify text data into one or more of several predefined categories using a language model. This is useful for tasks such as thematic analysis, topic categorization, or any scenario where you need to assign a one or more labels to each piece of text based on its content.
-This is the live version and thus will process data in real-time using the OpenAI API.
-
-## Using the Multi-Label Classification Tool
-1. The import wizard will appear twice: first to request the labels and second to request the text data.
-2. For each import, select which column you want to use for the labels and text data, respectively.
-3. The Dataset field is not used for this tool, so you can ignore it.
-
-Accepted file types: csv, tsv, Excel, and Parquet
-
-## Live Pricing
-For live pricing by model see OpenAI's [pricing page](https://platform.openai.com/docs/pricing).
+See [LLM Tools](../LLMTools.md) for the current workflow, including how Lists (your labels) and output fields work.
 
 ---

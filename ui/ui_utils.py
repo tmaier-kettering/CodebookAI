@@ -30,6 +30,9 @@ def populate_treeview(tree: ttk.Treeview, columns: tuple[str, ...], rows: list[t
     """
     Configure and populate a Treeview widget with tabular data.
 
+    Used by the Task Builder's data preview table (ui/task_builder.py). The
+    batches table has its own rendering now (see ui/batches_view.py).
+
     Args:
         tree: The Treeview widget to populate
         columns: Tuple of column header names

@@ -8,36 +8,6 @@ and managing context menus and popup displays.
 import tkinter as tk
 from tkinter import ttk
 
-# Constants for UI components
-TABLE_HEIGHT_ROWS = 12
-
-
-def make_tab_with_tree(parent_frame: ttk.Frame) -> tuple[ttk.Frame, ttk.Treeview]:
-    """
-    Create a Treeview widget with horizontal scrollbar inside a tab frame.
-
-    Args:
-        parent_frame: The parent frame to contain the tree and scrollbar
-
-    Returns:
-        Tuple of (tab_inner_frame, treeview_widget)
-    """
-    tab_inner = ttk.Frame(parent_frame)
-    tab_inner.columnconfigure(0, weight=1)
-
-    columns = ("id", "status", "created_at", "model", "type", "dataset(s)")
-    tree = ttk.Treeview(tab_inner, columns=columns, show="headings", height=TABLE_HEIGHT_ROWS)
-    for c in columns:
-        tree.heading(c, text=c)
-        tree.column(c, width=tab_inner.winfo_width()//len(columns), anchor="w")
-
-    h_scroll = ttk.Scrollbar(tab_inner, orient="horizontal", command=tree.xview)
-    tree.configure(xscrollcommand=h_scroll.set)
-
-    tree.grid(row=0, column=0, sticky="ew")
-    h_scroll.grid(row=1, column=0, sticky="ew")
-    return tab_inner, tree
-
 
 def popup_menu(event: tk.Event, tree: ttk.Treeview, menu: tk.Menu) -> None:
     """

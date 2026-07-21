@@ -95,10 +95,12 @@ pytest -v --tb=long
 
 | File | Coverage area |
 |------|---------------|
-| `test_batch_creation.py` | JSONL batch generation — prompt construction, schema building, `forbid_additional_props`, non-ASCII text, edge cases |
-| `test_batch_parsing.py` | Result parsing (`_safe_parse_model_text`), OpenAI client creation, `get_batch_results` with mocked API (success, auth failure, rate limit, timeout, malformed output, fenced JSON) |
+| `test_task.py` | The Task engine — prompt/list rendering (all list formats), dynamic output-model/schema building per field type, `validate_task`, `Task.to_dict`/`from_dict` round-trip, `forbid_additional_props` |
+| `test_presets.py` | The three built-in presets are valid, editable `Task`s |
+| `test_batch_creation.py` | JSONL batch generation from a `Task` — prompt rendering reaching the request body, system message handling, strict schema attached, non-ASCII text, edge cases |
+| `test_batch_parsing.py` | Result parsing (`_safe_parse_model_text`), OpenAI client creation, `send_batch` validation + sidecar writing, `get_batch_results` with mocked API (success, auth failure, rate limit, timeout, malformed output, fenced JSON, sidecar rejoin) |
 | `test_data_conversion.py` | `make_str_enum`, `to_long_df` (including multi-label explode), `join_datasets` |
-| `test_data_import.py` | Delimiter sniffing, CSV/TSV/Excel reading, non-ASCII content, empty files, realistic fixture |
+| `test_data_import.py` | Delimiter sniffing, CSV/TSV/Excel reading, non-ASCII content, empty files, realistic fixture, full-table `load_table` |
 | `test_settings.py` | User config load/save/roundtrip, `get_setting` precedence |
 | `test_reliability.py` | Cohen's kappa — perfect agreement, known value, edge cases (empty, mismatched lengths, single label, unicode labels) |
 
@@ -126,21 +128,25 @@ CodebookAI/
 ├── requirements-dev.txt        Test / development dependencies
 ├── pytest.ini                  Pytest configuration
 │
+├── core/                       The Task engine (pure, fully testable)
+│   ├── task.py                 Task/TaskList/OutputField, prompt rendering,
+│   │                           dynamic Pydantic model + strict schema builder
+│   └── presets.py               Built-in Task presets (single/multi/keyword)
+│
 ├── batch_processing/           OpenAI Batch API workflow
-│   ├── batch_creation.py       JSONL generation (pure, fully testable)
-│   ├── batch_method.py         Batch submission / retrieval / result parsing
+│   ├── batch_creation.py       JSONL generation from a Task (pure, fully testable)
+│   ├── batch_method.py         Batch submission / retrieval / sidecar rejoin
 │   └── batch_error_handling.py Error reporting UI
 │
-├── live_processing/            Real-time classification
-│   ├── single_label_live.py    Single-label pipeline
-│   ├── multi_label_live.py     Multi-label pipeline
+├── live_processing/            Real-time (synchronous) execution + analysis tools
+│   ├── task_live.py            Runs any Task row-by-row via the live API
 │   ├── reliability_calculator.py  Cohen's kappa (pure, fully testable)
-│   ├── keyword_extraction_live.py
 │   ├── correlogram.py
 │   └── sampler.py
 │
 ├── file_handling/              File I/O (mostly pure, fully testable)
-│   ├── data_import.py          CSV / Excel reader + import-wizard GUI
+│   ├── data_import.py          CSV / Excel reader; single-column wizard (for
+│   │                           Lists) + full-table loader (for the Task Builder)
 │   └── data_conversion.py      make_str_enum, to_long_df, join_datasets
 │
 ├── settings/                   Configuration
@@ -150,6 +156,7 @@ CodebookAI/
 │   └── models_registry.py      OpenAI model list cache
 │
 ├── ui/                         Tkinter GUI components
+│   └── task_builder.py         The Task Builder -- the app's central window
 │
 ├── tests/                      Automated test suite
 │   ├── conftest.py             Shared fixtures; in-memory keyring setup
@@ -157,6 +164,8 @@ CodebookAI/
 │   │   ├── sample_labels.csv
 │   │   ├── sample_quotes.csv
 │   │   └── realistic_dataset.csv
+│   ├── test_task.py
+│   ├── test_presets.py
 │   ├── test_batch_creation.py
 │   ├── test_batch_parsing.py
 │   ├── test_data_conversion.py

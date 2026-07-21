@@ -24,6 +24,7 @@ from file_handling.data_import import (
     _load_tabular,
     _read_text_table,
     _sniff_delimiter,
+    load_table,
 )
 
 
@@ -175,3 +176,38 @@ class TestLoadTabular:
         assert "positive" in values
         assert "negative" in values
         assert "neutral" in values
+
+
+# ---------------------------------------------------------------------------
+# load_table -- full-table import for the Task Builder (all columns, not one)
+# ---------------------------------------------------------------------------
+
+class TestLoadTable:
+    def test_returns_header_and_data_rows(self, tmp_csv):
+        path = tmp_csv("text,id,emotion\nhello,R1,joy\nbye,R2,sadness\n")
+        header, data = load_table(str(path))
+        assert header == ["text", "id", "emotion"]
+        assert data == [["hello", "R1", "joy"], ["bye", "R2", "sadness"]]
+
+    def test_no_headers_generates_column_names(self, tmp_csv):
+        path = tmp_csv("hello,R1\nbye,R2\n")
+        header, data = load_table(str(path), has_headers=False)
+        assert header == ["Column 1", "Column 2"]
+        assert data == [["hello", "R1"], ["bye", "R2"]]
+
+    def test_blank_header_cell_gets_placeholder_name(self, tmp_csv):
+        path = tmp_csv("text,,emotion\nhello,R1,joy\n")
+        header, _ = load_table(str(path))
+        assert header == ["text", "Column 2", "emotion"]
+
+    def test_empty_file_returns_empty(self, tmp_csv):
+        path = tmp_csv("")
+        header, data = load_table(str(path))
+        assert header == []
+        assert data == []
+
+    def test_header_only_file_returns_no_data_rows(self, tmp_csv):
+        path = tmp_csv("text,id\n")
+        header, data = load_table(str(path))
+        assert header == ["text", "id"]
+        assert data == []

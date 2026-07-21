@@ -109,13 +109,13 @@ class TestSaveUserSettings:
 
 class TestGetSetting:
     def test_returns_default_config_attribute(self):
-        # 'model' is defined in settings/config.py as 'gpt-4o-mini'
-        result = get_setting("model")
-        assert result == "gpt-4o-mini"
+        # 'time_zone' is defined in settings/config.py as 'US/Eastern'
+        result = get_setting("time_zone")
+        assert result == "US/Eastern"
 
     def test_user_setting_overrides_config(self):
-        save_user_settings({"model": "gpt-5-override"})
-        assert get_setting("model") == "gpt-5-override"
+        save_user_settings({"time_zone": "UTC"})
+        assert get_setting("time_zone") == "UTC"
 
     def test_returns_provided_default_when_key_missing(self):
         result = get_setting("nonexistent_key_xyz", default="my_default")
