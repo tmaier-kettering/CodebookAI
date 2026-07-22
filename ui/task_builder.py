@@ -37,7 +37,7 @@ from file_handling.data_import import import_data, load_table
 from live_processing.task_live import run_task_live
 from settings.models_registry import get_models
 from ui.drag_drop import enable_file_drop
-from ui.ui_utils import center_window, populate_treeview
+from ui.ui_utils import center_window, populate_treeview, restore_window_geometry, save_window_geometry
 
 FIELD_TYPES: list[FieldType] = ["choice", "multi_choice", "text_list", "free_text", "number", "yes_no"]
 LIST_FORMATS: list[ListFormat] = ["comma", "hyphen", "space", "newline"]
@@ -66,6 +66,7 @@ def _parse_optional_int(s: str) -> int | None:
 COLUMN_PILL_BG = "#dbe9ff"
 LIST_PILL_BG = "#d9f2df"
 UNKNOWN_PLACEHOLDER_BG = "#ffd6d6"
+TASK_BUILDER_GEOMETRY_KEY = "task_builder_geometry"
 
 
 def open_task_builder(parent: tk.Misc, preset_task: Task | None = None) -> None:
@@ -84,6 +85,7 @@ class _ScrollableFrame(ttk.Frame):
         super().__init__(master)
         canvas = tk.Canvas(self, highlightthickness=0)
         vsb = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
+        self.vsb = vsb
         self.body = ttk.Frame(canvas)
         self.body.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
         canvas.create_window((0, 0), window=self.body, anchor="nw")
@@ -151,8 +153,8 @@ class TaskBuilder(tk.Toplevel):
     def __init__(self, parent: tk.Misc, preset_task: Task | None = None):
         super().__init__(parent)
         self.title("Task Builder")
-        self.geometry("1000x760")
         self.transient(parent)
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
 
         # ----- state -----
         self.df: "pd.DataFrame | None" = None
@@ -183,7 +185,15 @@ class TaskBuilder(tk.Toplevel):
         if preset_task is not None:
             self._apply_task(preset_task)
 
-        center_window(self, 1000, 760)
+        if not restore_window_geometry(self, TASK_BUILDER_GEOMETRY_KEY):
+            self.update_idletasks()
+            w = root.winfo_reqwidth() + outer.vsb.winfo_reqwidth() + 20
+            h = min(root.winfo_reqheight() + 20, self.winfo_screenheight() - 80)
+            center_window(self, w, h)
+
+    def _on_close(self) -> None:
+        save_window_geometry(self, TASK_BUILDER_GEOMETRY_KEY)
+        self.destroy()
 
     # -----------------------------------------------------------------
     # Input section: import a table, show column pills, optional preview

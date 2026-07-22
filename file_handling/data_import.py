@@ -116,7 +116,10 @@ def _read_text_table(path: str, max_rows: int | None = None) -> list[list[str]]:
             return rows
 
     try:
-        return _read_with(path, enc="utf-8")
+        # utf-8-sig strips a leading BOM if present (common in Excel-exported
+        # CSVs) and behaves identically to utf-8 when there is none -- plain
+        # "utf-8" would silently glue a U+FEFF onto the first header cell.
+        return _read_with(path, enc="utf-8-sig")
     except UnicodeDecodeError:
         return _read_with(path, enc=None)
     except Exception as e:

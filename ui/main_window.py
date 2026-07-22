@@ -30,14 +30,14 @@ from live_processing.sampler import sample_data
 try:
     from settings_window import SettingsWindow
     from tooltip import ToolTip
-    from ui_utils import center_window
+    from ui_utils import center_window, save_window_geometry, restore_window_geometry
     from batches_view import BatchesPanel
     from batch_operations import refresh_batches_async
     from task_builder import open_task_builder
 except ImportError:  # fallback when running as a package (ui.*)
     from ui.settings_window import SettingsWindow
     from ui.tooltip import ToolTip
-    from ui.ui_utils import center_window
+    from ui.ui_utils import center_window, save_window_geometry, restore_window_geometry
     from ui.batches_view import BatchesPanel
     from ui.batch_operations import refresh_batches_async
     from ui.task_builder import open_task_builder
@@ -45,6 +45,7 @@ except ImportError:  # fallback when running as a package (ui.*)
 APP_TITLE = "CodebookAI"
 APP_SUBTITLE = "A qualitative research tool based on OpenAI's Playground API."
 WINDOW_SIZE = (1000, 620)  # width, height
+MAIN_WINDOW_GEOMETRY_KEY = "main_window_geometry"
 
 
 def _open_help_docs():
@@ -99,11 +100,17 @@ def build_ui(root: tk.Tk) -> None:
     # ===== Menu Bar =====
     menubar = tk.Menu(root)
 
+    def _on_exit():
+        save_window_geometry(root, MAIN_WINDOW_GEOMETRY_KEY)
+        root.destroy()
+
+    root.protocol("WM_DELETE_WINDOW", _on_exit)
+
     # File
     file_menu = tk.Menu(menubar, tearoff=False)
     file_menu.add_command(label="Settings", command=lambda: SettingsWindow(root))
     file_menu.add_separator()
-    file_menu.add_command(label="Exit", command=root.destroy)
+    file_menu.add_command(label="Exit", command=_on_exit)
     menubar.add_cascade(label="File", menu=file_menu)
 
     # Data Prep
@@ -167,7 +174,8 @@ def build_ui(root: tk.Tk) -> None:
 
     # Initial load
     refresh_batches_async(root)
-    center_window(root, *WINDOW_SIZE)
+    if not restore_window_geometry(root, MAIN_WINDOW_GEOMETRY_KEY):
+        center_window(root, *WINDOW_SIZE)
 
 
 if __name__ == "__main__":

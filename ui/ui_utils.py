@@ -8,6 +8,26 @@ for window positioning, widget configuration, and data display.
 import tkinter as tk
 from tkinter import ttk
 
+from settings.user_config import get_setting, set_setting
+
+
+def save_window_geometry(win: tk.Misc, setting_key: str) -> None:
+    """Persist a window's current geometry string under setting_key."""
+    win.update_idletasks()
+    set_setting(setting_key, win.geometry())
+
+
+def restore_window_geometry(win: tk.Misc, setting_key: str) -> bool:
+    """Restore a previously saved geometry. Returns True if one was applied."""
+    geo = get_setting(setting_key, "")
+    if not geo:
+        return False
+    try:
+        win.geometry(geo)
+        return True
+    except tk.TclError:
+        return False
+
 
 def center_window(win: tk.Tk, width: int, height: int) -> None:
     """

@@ -73,6 +73,27 @@ def _read_sidecar(batch_id: str) -> "pd.DataFrame | None":
     return pd.read_csv(path, dtype=str, keep_default_na=False)
 
 
+def _task_sidecar_path(batch_id: str) -> Path:
+    return _sidecar_dir() / f"{batch_id}.task.json"
+
+
+def _write_task_sidecar(batch_id: str, task: Task) -> None:
+    _task_sidecar_path(batch_id).write_text(
+        json.dumps(task.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+
+
+def has_task_sidecar(batch_id: str) -> bool:
+    return _task_sidecar_path(batch_id).exists()
+
+
+def read_task_sidecar(batch_id: str) -> "Task | None":
+    path = _task_sidecar_path(batch_id)
+    if not path.exists():
+        return None
+    return Task.from_dict(json.loads(path.read_text(encoding="utf-8")))
+
+
 def _row_index_from_custom_id(custom_id: str | None) -> int | None:
     """'row-00001' -> 0 (matches sidecar's 0-based row order)."""
     if not custom_id:
@@ -150,6 +171,7 @@ def send_batch(task: Task, df: "pd.DataFrame", dataset: str | None = None) -> An
     )
 
     _write_sidecar(batch.id, df, task.carry_columns)
+    _write_task_sidecar(batch.id, task)
     return batch
 
 
@@ -345,5 +367,8 @@ def rerun_batch(batch_id: str, count: int = 1) -> list[str]:
         src = _sidecar_path(batch_id)
         if src.exists():
             shutil.copyfile(src, _sidecar_path(new_batch.id))
+        task_src = _task_sidecar_path(batch_id)
+        if task_src.exists():
+            shutil.copyfile(task_src, _task_sidecar_path(new_batch.id))
         new_ids.append(new_batch.id)
     return new_ids

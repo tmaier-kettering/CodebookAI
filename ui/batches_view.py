@@ -20,7 +20,7 @@ except ImportError:  # fallback when running as a package (ui.*)
     from ui.ui_helpers import popup_menu
     from ui.batch_operations import cancel_batch_async, call_batch_download_async, rerun_batch_async
 
-from batch_processing.batch_method import ONGOING_STATUSES, list_batches
+from batch_processing.batch_method import ONGOING_STATUSES, has_task_sidecar, list_batches, read_task_sidecar
 from settings.user_config import get_setting, set_setting
 
 COLUMNS = (
@@ -37,6 +37,7 @@ HEADERS = {
 DEFAULT_VISIBLE = ["status", "type", "dataset", "model", "rows", "progress", "created"]
 
 COLUMNS_SETTING_KEY = "batches_columns"
+FILTERS_SETTING_KEY = "batches_filters"
 
 # Columns with a small, closed set of values -- rendered as a dropdown of
 # whatever values are actually present in the current data (not a hardcoded
@@ -182,6 +183,7 @@ class BatchesPanel(ttk.Frame):
 
         self._build_toolbar()
         self._build_body()
+        self._restore_filters()
 
     # ----- construction -----------------------------------------------
 
@@ -194,7 +196,7 @@ class BatchesPanel(ttk.Frame):
         # Row 1: free-text search, then a dropdown per small-closed-set column.
         ttk.Label(row1, text="Search:").pack(side="left")
         self._search_var = tk.StringVar()
-        self._search_var.trace_add("write", lambda *_: self._render())
+        self._search_var.trace_add("write", lambda *_: self._on_filter_change())
         ttk.Entry(row1, textvariable=self._search_var, width=16).pack(side="left", padx=(4, 0))
 
         for col in CHOICE_COLUMNS:
@@ -230,7 +232,7 @@ class BatchesPanel(ttk.Frame):
         # A trace (not just <<ComboboxSelected>>) so any programmatic change
         # -- e.g. _refresh_choice_options resetting a stale selection --
         # re-renders too, not just direct user picks.
-        var.trace_add("write", lambda *_: self._render())
+        var.trace_add("write", lambda *_: self._on_filter_change())
         self._choice_vars[col] = var
         self._choice_combos[col] = combo
 
@@ -240,8 +242,8 @@ class BatchesPanel(ttk.Frame):
         ttk.Entry(parent, textvariable=low, width=9).pack(side="left")
         ttk.Label(parent, text="–").pack(side="left", padx=2)
         ttk.Entry(parent, textvariable=high, width=9).pack(side="left")
-        low.trace_add("write", lambda *_: self._render())
-        high.trace_add("write", lambda *_: self._render())
+        low.trace_add("write", lambda *_: self._on_filter_change())
+        high.trace_add("write", lambda *_: self._on_filter_change())
         store[col] = (low, high)
 
     def _build_body(self):
@@ -363,6 +365,35 @@ class BatchesPanel(ttk.Frame):
             low.set("")
             high.set("")
 
+    def _on_filter_change(self):
+        self._render()
+        self._save_filters()
+
+    def _save_filters(self):
+        set_setting(FILTERS_SETTING_KEY, {
+            "search": self._search_var.get(),
+            "choices": {col: var.get() for col, var in self._choice_vars.items()},
+            "ranges": {col: [low.get(), high.get()] for col, (low, high) in self._range_vars.items()},
+            "dates": {col: [from_.get(), to.get()] for col, (from_, to) in self._date_vars.items()},
+        })
+
+    def _restore_filters(self):
+        saved = get_setting(FILTERS_SETTING_KEY, {})
+        if not saved:
+            return
+        self._search_var.set(saved.get("search", ""))
+        for col, value in saved.get("choices", {}).items():
+            if col in self._choice_vars:
+                self._choice_vars[col].set(value)
+        for col, (low, high) in saved.get("ranges", {}).items():
+            if col in self._range_vars:
+                self._range_vars[col][0].set(low)
+                self._range_vars[col][1].set(high)
+        for col, (from_, to) in saved.get("dates", {}).items():
+            if col in self._date_vars:
+                self._date_vars[col][0].set(from_)
+                self._date_vars[col][1].set(to)
+
     # ----- rendering: filter + sort, then repopulate the tree ------------
 
     def _render(self):
@@ -424,6 +455,8 @@ class BatchesPanel(ttk.Frame):
             menu.add_command(label="Cancel", command=lambda: cancel_batch_async(root, row["id"]))
         elif row["status"] == "completed":
             menu.add_command(label="Download", command=lambda: call_batch_download_async(root, row["id"]))
+        if has_task_sidecar(row["id"]):
+            menu.add_command(label="Open as new task", command=lambda: self._on_open_as_task(root, row["id"]))
 
         popup_menu(event, self.tree, menu)
 
@@ -432,3 +465,13 @@ class BatchesPanel(ttk.Frame):
         if not count:
             return
         rerun_batch_async(root, batch_id, count)
+
+    def _on_open_as_task(self, root, batch_id: str):
+        task = read_task_sidecar(batch_id)
+        if task is None:
+            return
+        try:  # lazy: avoid import cycle; mirrors the module-level fallback above
+            from task_builder import open_task_builder
+        except ImportError:
+            from ui.task_builder import open_task_builder
+        open_task_builder(root, task)
