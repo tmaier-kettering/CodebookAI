@@ -208,3 +208,8 @@ __marimo__/
 
 # Test files
 test_drag_drop_gui.py
+
+# CodeBoarding architecture diagrams (local baseline, per-machine)
+.codeboarding/*
+# ...except the analysis output the app.codeboarding.org viewer reads
+!.codeboarding/analysis.json
